@@ -3,7 +3,6 @@ from kvcommon import logger
 from iaptoolkit.exceptions import ServiceAccountTokenException
 from iaptoolkit.exceptions import TokenStorageException
 from iaptoolkit.exceptions import TokenException
-from iaptoolkit.vars import GOOGLE_IAP_CLIENT_ID
 
 from .structs import TokenStruct
 from .structs import TokenRefreshStruct
@@ -15,12 +14,10 @@ from .service_account import GoogleServiceAccount
 
 LOG = logger.get_logger("iaptk")
 
-google_sa_token_client = GoogleServiceAccount(GOOGLE_IAP_CLIENT_ID)
 
-
-def get_token_for_google_service_account(iap_client_id: str = GOOGLE_IAP_CLIENT_ID):
+def get_token_for_google_service_account(iap_client_id):
     try:
-        return GoogleServiceAccount(GOOGLE_IAP_CLIENT_ID).get_token()
+        return GoogleServiceAccount(iap_client_id).get_token()
     except ServiceAccountTokenException as ex:
         LOG.debug(ex)
         raise

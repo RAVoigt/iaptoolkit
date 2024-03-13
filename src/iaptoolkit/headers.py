@@ -4,11 +4,11 @@ from kvcommon import logger
 
 from iaptoolkit.constants import GOOGLE_IAP_AUTH_HEADER
 from iaptoolkit.constants import GOOGLE_IAP_AUTH_HEADER_PROXY
-from iaptoolkit.tokens import get_token_for_google_service_account as get_token
+from iaptoolkit.tokens import get_token_for_google_service_account
 from iaptoolkit.tokens.structs import ResultAddTokenHeader
 from iaptoolkit.utils.urls import is_url_safe_for_token
 from iaptoolkit.vars import IAPTOOLKIT_USE_AUTH_HEADER
-
+from iaptoolkit.vars import GOOGLE_IAP_CLIENT_ID
 
 LOG = logger.get_logger("iaptk")
 
@@ -39,7 +39,7 @@ def sanitize_request_headers(headers: dict) -> dict:
     return log_safe_headers
 
 
-def add_token_to_request_headers(request_headers: dict, use_oauth2: bool) -> bool:
+def add_token_to_request_headers(request_headers: dict, use_oauth2: bool, iap_client_id: str) -> bool:
     """
     Adds Bearer token to headers dict. Modifies dict in-place.
     Returns True if added token is a fresh one, or False if token is from cache
@@ -47,7 +47,7 @@ def add_token_to_request_headers(request_headers: dict, use_oauth2: bool) -> boo
     # TODO: Make this less google-specific, or move it to a google-specific implementation
     # TODO: oauth2
 
-    token_refresh_struct = get_token()
+    token_refresh_struct = get_token_for_google_service_account(iap_client_id=iap_client_id)
     id_token: str = token_refresh_struct.id_token
     auth_header_str = "Bearer {}".format(id_token)
 
@@ -73,7 +73,8 @@ def check_url_and_add_token_header(
     url: str,
     request_headers: dict,
     use_oauth2: bool = False,
-    valid_domains: t.Optional[t.List[str]] = None,
+    valid_domains: t.List[str] | None = None,
+    iap_client_id: str = GOOGLE_IAP_CLIENT_ID
 ) -> ResultAddTokenHeader:
     """Prevent inadvertently sending private tokens to arbitrary locations.
     Returns:
@@ -85,7 +86,7 @@ def check_url_and_add_token_header(
 
     # Verify that the url's domain is one we allow before adding a token
     if is_url_safe_for_token(url_parts, valid_domains):
-        token_is_fresh = add_token_to_request_headers(request_headers, use_oauth2)
+        token_is_fresh = add_token_to_request_headers(request_headers, use_oauth2, iap_client_id=iap_client_id)
         return ResultAddTokenHeader(token_added=True, token_is_fresh=token_is_fresh)
     else:
         LOG.warn(

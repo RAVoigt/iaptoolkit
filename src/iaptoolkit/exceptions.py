@@ -24,7 +24,7 @@ class TokenStorageException(TokenException):
 
 class ServiceAccountTokenException(TokenException):
     def __init__(
-        self, message: str, google_exception: t.Union[DefaultCredentialsError, RefreshError]
+        self, message: str, google_exception: t.Union[DefaultCredentialsError, RefreshError] | None
     ):
         self.google_exception = google_exception
         credentials_env_var_value = os.environ.get(GOOGLE_CREDENTIALS_FILE_PATH)
@@ -40,7 +40,7 @@ class ServiceAccountTokenException(TokenException):
 
     @property
     def retryable(self):
-        return self.google_exception._retryable
+        return self.google_exception and self.google_exception._retryable
 
 
 class ServiceAccountNoDefaultCredentials(ServiceAccountTokenException):

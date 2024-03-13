@@ -16,7 +16,6 @@ from iaptoolkit.exceptions import ServiceAccountTokenFailedRefresh
 from iaptoolkit.exceptions import ServiceAccountNoDefaultCredentials
 from iaptoolkit.exceptions import TokenStorageException
 
-from iaptoolkit.vars import GOOGLE_IAP_CLIENT_ID
 # from iaptoolkit.vars import GOOGLE_CLIENT_ID
 # from iaptoolkit.vars import GOOGLE_CLIENT_SECRET
 
@@ -29,8 +28,8 @@ MAX_RECURSE = 3
 
 
 class ServiceAccount(object):
-    """Base class for interacting with service accounts and OIDC tokens for IAP
-    """
+    """Base class for interacting with service accounts and OIDC tokens for IAP"""
+
     # TODO: This is a static namespace for SA functions. Turn it into a per-iap-client-id client
     # TODO: Move Google-specific logic to GoogleServiceAccount
 
@@ -166,9 +165,13 @@ class ServiceAccount(object):
 
 
 class GoogleServiceAccount(ServiceAccount):
-    """For interacting with Google service accounts and OIDC tokens for Google IAP
-    """
-    def __init__(self, iap_client_id: str = GOOGLE_IAP_CLIENT_ID) -> None:
+    """For interacting with Google service accounts and OIDC tokens for Google IAP"""
+
+    def __init__(self, iap_client_id: str) -> None:
+        if not iap_client_id or not isinstance(iap_client_id, str):
+            raise ServiceAccountTokenException(
+                "Invalid iap_client_id for GoogleServiceAccount", google_exception=None
+            )
         self._iap_client_id = iap_client_id
         super().__init__()
 

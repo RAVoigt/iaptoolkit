@@ -10,7 +10,7 @@ from iaptoolkit.utils.urls import is_url_safe_for_token
 from iaptoolkit.vars import IAPTOOLKIT_USE_AUTH_HEADER
 
 
-LOG = logger.get_logger("iaptoolkit")
+LOG = logger.get_logger("iaptk")
 
 
 def _sanitize_request_header(headers_dict: dict, header_key: str):

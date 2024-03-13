@@ -13,7 +13,7 @@ from iaptoolkit.vars import PERSISTENT_DATASTORE_PATH
 from iaptoolkit.vars import PERSISTENT_DATASTORE_USERNAME
 
 
-LOG = logger.get_logger("iaptoolkit-datastore")
+LOG = logger.get_logger("iaptk-ds")
 
 
 class TokenDatastore(VersionedDatastore):

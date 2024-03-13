@@ -13,7 +13,7 @@ from .structs import TokenRefreshStruct
 # from .service_account import ServiceAccount
 from .service_account import GoogleServiceAccount
 
-LOG = logger.get_logger("iaptoolkit")
+LOG = logger.get_logger("iaptk")
 
 google_sa_token_client = GoogleServiceAccount(GOOGLE_IAP_CLIENT_ID)
 

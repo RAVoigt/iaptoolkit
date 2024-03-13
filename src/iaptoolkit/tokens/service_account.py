@@ -24,7 +24,7 @@ from .structs import TokenStruct
 from .structs import TokenRefreshStruct
 
 
-LOG = logger.get_logger("iaptoolkit")
+LOG = logger.get_logger("iaptk")
 MAX_RECURSE = 3
 
 

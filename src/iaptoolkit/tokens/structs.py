@@ -5,7 +5,7 @@ import typing as t
 from kvcommon import logger
 
 
-LOG = logger.get_logger("iaptoolkit")
+LOG = logger.get_logger("iaptk")
 
 
 @dataclass(kw_only=True)

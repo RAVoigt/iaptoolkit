@@ -6,8 +6,7 @@ from kvcommon.urls import get_netloc_without_port_from_url_parts
 
 from iaptoolkit.exceptions import InvalidDomain
 
-LOG = logger.get_logger("iaptoolkit")
-
+LOG = logger.get_logger("iaptk")
 
 
 def is_url_safe_for_token(

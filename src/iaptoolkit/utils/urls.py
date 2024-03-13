@@ -4,13 +4,10 @@ from urllib.parse import ParseResult
 from kvcommon import logger
 from kvcommon.urls import get_netloc_without_port_from_url_parts
 
-from iaptoolkit.exceptions import IAPToolkitBaseException
+from iaptoolkit.exceptions import InvalidDomain
 
 LOG = logger.get_logger("iaptoolkit")
 
-
-class InvalidDomain(IAPToolkitBaseException):
-    pass
 
 
 def is_url_safe_for_token(

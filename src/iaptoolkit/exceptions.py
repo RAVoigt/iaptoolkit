@@ -49,3 +49,7 @@ class ServiceAccountNoDefaultCredentials(ServiceAccountTokenException):
 
 class ServiceAccountTokenFailedRefresh(ServiceAccountTokenException):
     pass
+
+
+class InvalidDomain(IAPToolkitBaseException):
+    pass

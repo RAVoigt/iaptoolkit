@@ -107,7 +107,14 @@ class ServiceAccount(object):
     def _get_fresh_token(iap_client_id: str) -> TokenStruct:
         google_credentials = ServiceAccount._get_fresh_credentials(iap_client_id)
         id_token: str = str(google_credentials.token)
-        return TokenStruct(id_token=id_token, expiry=google_credentials.expiry)
+
+        # Google lib uses deprecated 'utcfromtimestamp' func as of v2.29.x
+        # e.g.: datetime.datetime.utcfromtimestamp(payload["exp"])
+        # This creates a TZ-naive datetime in UTC from a POSIX timestamp.
+        # Python datetimes assume local TZ, and we want to explicitly only work in UTC here.
+        token_expiry = google_credentials.expiry.replace(tzinfo=datetime.timezone.utc)
+
+        return TokenStruct(id_token=id_token, expiry=token_expiry)
 
     @staticmethod
     def get_token(

@@ -2,20 +2,49 @@
 
 A library of utils to ease programmatic authentication with Google IAP (and ideally other IAPs in future).
 
-## Configuration & Env Vars
 
-| Env Var | Default | Type | Description|
-|---|---|---|---|
-|`KVC_LOG_FORMAT`|`"%(asctime)s - [%(levelname)s] - %(name)s - %(message)s"`|String|Sets log format for internal logger|
-|`KVC_LOG_DATEFMT`|`"%Y-%m-%d %H:%M:%S"`|String|Sets log datetime format for internal logger|
-|`IAPTOOLKIT_USE_AUTH_HEADER`|`False`|Boolean|If False, only adds Google IAP auth tokens to the `Proxy-Authorization` header. If True, adds tokens in the `Authorization` header if available/unused, falling back to the `Proxy-Authorization` header if needed. |
-|`IAPTOOLKIT_PERSISTENT_DATASTORE_ENABLED`|`False`|Boolean|If true, the TOML-backed datastore for tokens is enabled.|
-|`IAPTOOLKIT_PERSISTENT_DATASTORE_PATH`|`"~/.iaptoolkit"`|String|Path to dir where TOML-backed datastore|
-|`IAPTOOLKIT_PERSISTENT_DATASTORE_USERNAME`|`"user.toml"`|String|Filename for TOML-backed datastore|
-|`IAPTOOLKIT_CONFIG_VERSION`|`False`|Boolean|(Unused) Schema version for token storage|
-|`GOOGLE_IAP_CLIENT_ID`|None|String|#TODO|
-|`GOOGLE_CLIENT_ID`|None|String|#TODO|
-|`GOOGLE_CLIENT_SECRET`|None|String|#TODO|
+## Quick Start / Example Usage
+
+```python
+import requests
+
+from iaptoolkit import IAPToolkit
+
+iaptk = IAPToolkit(google_iap_client_id="EXAMPLE_ID_123456789ABCDEF")
+allowed_domains = ["example.com", ]
+
+
+# Example #1 - Combined Calls
+def example1(url: str):
+    headers = dict()
+    result = iaptk.check_url_and_add_token_header(
+        url=url,
+        request_headers=headers,
+        valid_domains=allowed_domains
+    )
+    # result.token_added (bool) indicates if the token was added, depending on whether or not URL was valid
+    # headers dict now contains the appropriate Bearer Token header for Google IAP
+
+    # Make HTTP GET request with requests lib, with our headers containing bearer token to auth with IAP
+    response = requests.request("GET", url, headers=headers)
+
+
+# Example #2 - Separate Calls - Functionally the same as Example 1 but more flexibility in URL validation
+def example1(url: str):
+    is_url_safe: bool = iaptk.is_url_safe_for_token(url=url, valid_domains=valid_domains)
+
+    if not is_url_safe:
+        raise ExampleBadURLException("This URL isn't safe to send token headers to!")
+
+    headers = dict()
+    token_is_fresh: bool = iaptk.get_token_and_add_to_headers(request_headers=headers)
+    # token_is_fresh indicates if token was newly retrieved (True), or if a cached token was reused (False)
+    # headers dict now contains the appropriate Bearer Token header for Google IAP
+
+    # Make HTTP GET request with requests lib, with our headers containing bearer token to auth with IAP
+    response = requests.request("GET", url, headers=headers)
+
+```
 
 ## Disclaimer
 

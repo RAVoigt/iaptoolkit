@@ -4,9 +4,6 @@ from kvcommon import logger
 
 from iaptoolkit.constants import GOOGLE_IAP_AUTH_HEADER
 from iaptoolkit.constants import GOOGLE_IAP_AUTH_HEADER_PROXY
-from iaptoolkit.tokens.structs import ResultAddTokenHeader
-from iaptoolkit.utils.urls import is_url_safe_for_token
-from iaptoolkit.vars import GOOGLE_IAP_CLIENT_ID
 
 LOG = logger.get_logger("iaptk")
 

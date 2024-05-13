@@ -8,9 +8,9 @@ from kvcommon.datastore.backend import TOMLBackend
 from kvcommon.datastore import VersionedDatastore
 
 from iaptoolkit.constants import IAPTOOLKIT_CONFIG_VERSION
-from iaptoolkit.vars import PERSISTENT_DATASTORE_ENABLED
-from iaptoolkit.vars import PERSISTENT_DATASTORE_PATH
-from iaptoolkit.vars import PERSISTENT_DATASTORE_USERNAME
+# from iaptoolkit.vars import PERSISTENT_DATASTORE_ENABLED
+# from iaptoolkit.vars import PERSISTENT_DATASTORE_PATH
+# from iaptoolkit.vars import PERSISTENT_DATASTORE_USERNAME
 
 
 LOG = logger.get_logger("iaptk-ds")
@@ -67,5 +67,5 @@ class TokenDatastore(VersionedDatastore):
 
 datastore = TokenDatastore(DictBackend)
 
-if PERSISTENT_DATASTORE_ENABLED:
-    datastore_toml = TokenDatastore(TOMLBackend(PERSISTENT_DATASTORE_PATH, PERSISTENT_DATASTORE_USERNAME))
+# if PERSISTENT_DATASTORE_ENABLED:
+#     datastore_toml = TokenDatastore(TOMLBackend(PERSISTENT_DATASTORE_PATH, PERSISTENT_DATASTORE_USERNAME))

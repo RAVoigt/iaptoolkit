@@ -16,9 +16,6 @@ from iaptoolkit.exceptions import ServiceAccountTokenFailedRefresh
 from iaptoolkit.exceptions import ServiceAccountNoDefaultCredentials
 from iaptoolkit.exceptions import TokenStorageException
 
-# from iaptoolkit.vars import GOOGLE_CLIENT_ID
-# from iaptoolkit.vars import GOOGLE_CLIENT_SECRET
-
 from .structs import TokenStruct
 from .structs import TokenRefreshStruct
 

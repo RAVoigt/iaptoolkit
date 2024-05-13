@@ -69,29 +69,3 @@ def add_token_to_request_headers(request_headers: dict, use_oauth2: bool, iap_cl
     return token_refresh_struct.token_is_new
 
 
-def check_url_and_add_token_header(
-    url: str,
-    request_headers: dict,
-    use_oauth2: bool = False,
-    valid_domains: t.List[str] | None = None,
-    iap_client_id: str = GOOGLE_IAP_CLIENT_ID
-) -> ResultAddTokenHeader:
-    """Prevent inadvertently sending private tokens to arbitrary locations.
-    Returns:
-        True, True: Adding token was allowed and token is fresh
-        True, False: Adding token was allowed and token is from cache
-        False, False: Adding token was not allowed
-    """
-    url_parts = urlparse(url)
-
-    # Verify that the url's domain is one we allow before adding a token
-    if is_url_safe_for_token(url_parts, valid_domains):
-        token_is_fresh = add_token_to_request_headers(request_headers, use_oauth2, iap_client_id=iap_client_id)
-        return ResultAddTokenHeader(token_added=True, token_is_fresh=token_is_fresh)
-    else:
-        LOG.warn(
-            "URL is not approved: %s - Token will not be added to headers. Valid domains are: %s",
-            url,
-            valid_domains,
-        )
-        return ResultAddTokenHeader(token_added=False, token_is_fresh=False)

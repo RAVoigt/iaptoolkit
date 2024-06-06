@@ -2,6 +2,15 @@
 
 A library of utils to ease programmatic authentication with Google IAP (and ideally other IAPs in future).
 
+# PyPi
+https://pypi.org/project/iaptoolkit/
+
+# Installation
+### With Poetry:
+`poetry add iaptoolkit`
+
+### With pip:
+`pip install iaptoolkit`
 
 ## Quick Start / Example Usage
 

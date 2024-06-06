@@ -42,7 +42,8 @@ class TokenStructOAuth2(TokenStruct):
     refresh_token: str
     new_refresh_token: bool = False
 
+
 @dataclass(kw_only=True)
-class ResultAddTokenHeader():
+class ResultAddTokenHeader:
     token_added: bool
     token_is_fresh: bool

@@ -455,13 +455,13 @@ testing = ["Django", "attrs", "colorama", "docopt", "pytest (<7.0.0)"]
 
 [[package]]
 name = "kvcommon"
-version = "0.1.1"
+version = "0.1.2"
 description = "Library of miscellaneous common python utils that aren't worthy of their own dedicated libs."
 optional = false
 python-versions = "<4.0,>=3.11"
 files = [
-    {file = "kvcommon-0.1.1-py3-none-any.whl", hash = "sha256:5fb3c626ba16b6ad68725d48ac9b9581e295d6075613feacf9fe91b8948b600e"},
-    {file = "kvcommon-0.1.1.tar.gz", hash = "sha256:7eb653ac509eb67048660e4852058b850b5e7e5f61b339e58dd6167cfcec5be1"},
+    {file = "kvcommon-0.1.2-py3-none-any.whl", hash = "sha256:62e946523700d69c97a38d4eb6dafef5b6c8f97c96c0694050b37c7eedc771bc"},
+    {file = "kvcommon-0.1.2.tar.gz", hash = "sha256:7657e8336e83fbd2a7844c01dd0f9604f2c597d4b698965a4f1b347da885ef5a"},
 ]
 
 [package.dependencies]
@@ -913,4 +913,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "d6e521b4930c84dc5dace2fb4bd5ac111ed8c73a1da627de8f2a662e9045269a"
+content-hash = "dd287deca35c711bc7536e7dafe6eb8d349134c3605403d79588f0f2c41f20f6"

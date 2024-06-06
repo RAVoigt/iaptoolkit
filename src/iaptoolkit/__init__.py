@@ -146,10 +146,10 @@ class IAPToolkit_OIDC(IAPToolkit):
         raise NotImplementedError("Cannot call OAuth2 methods on OIDC-only instance of IAPToolkit.")
 
     def get_token_and_add_to_headers(
-        self, request_headers: dict, use_auth_header: bool = False
+        self, request_headers: dict, use_auth_header: bool = False, use_oauth2: bool = False,
     ) -> bool:
         return super().get_token_and_add_to_headers(
-            request_headers=request_headers, use_oauth2=False, use_auth_header=use_auth_header
+            request_headers=request_headers, use_oauth2=use_oauth2, use_auth_header=use_auth_header
         )
 
     def check_url_and_add_token_header(
@@ -193,10 +193,10 @@ class IAPToolkit_OAuth2(IAPToolkit):
         raise NotImplementedError("Cannot call OIDC methods on OAuth2-only instance of IAPToolkit.")
 
     def get_token_and_add_to_headers(
-        self, request_headers: dict, use_auth_header: bool = False
+        self, request_headers: dict, use_auth_header: bool = False, use_oauth2: bool = True,
     ) -> bool:
         return super().get_token_and_add_to_headers(
-            request_headers=request_headers, use_oauth2=True, use_auth_header=use_auth_header
+            request_headers=request_headers, use_oauth2=use_oauth2, use_auth_header=use_auth_header
         )
 
     def check_url_and_add_token_header(

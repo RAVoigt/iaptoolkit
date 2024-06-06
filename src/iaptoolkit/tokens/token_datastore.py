@@ -4,13 +4,10 @@ import typing as t
 from kvcommon import logger
 from kvcommon.datastore.backend import DatastoreBackend
 from kvcommon.datastore.backend import DictBackend
-from kvcommon.datastore.backend import TOMLBackend
+# from kvcommon.datastore.backend import TOMLBackend
 from kvcommon.datastore import VersionedDatastore
 
 from iaptoolkit.constants import IAPTOOLKIT_CONFIG_VERSION
-# from iaptoolkit.vars import PERSISTENT_DATASTORE_ENABLED
-# from iaptoolkit.vars import PERSISTENT_DATASTORE_PATH
-# from iaptoolkit.vars import PERSISTENT_DATASTORE_USERNAME
 
 
 LOG = logger.get_logger("iaptk-ds")
@@ -30,7 +27,7 @@ class TokenDatastore(VersionedDatastore):
         self.set_value("tokens", tokens_dict)
 
     def discard_existing_tokens(self):
-        LOG.info("Discarding existing tokens.")
+        LOG.debug("Discarding existing tokens.")
         self.update_data(tokens={})
 
     def get_stored_service_account_token(self, iap_client_id: str) -> t.Optional[dict]:

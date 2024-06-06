@@ -30,7 +30,7 @@ class TokenDatastore(VersionedDatastore):
         self.set_value("tokens", tokens_dict)
 
     def discard_existing_tokens(self):
-        LOG.info("Discarding existing tokens.")
+        LOG.debug("Discarding existing tokens.")
         self.update_data(tokens={})
 
     def get_stored_service_account_token(self, iap_client_id: str) -> t.Optional[dict]:

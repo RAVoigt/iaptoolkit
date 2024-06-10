@@ -48,7 +48,7 @@ class OIDC(BaseTokenInterface):
         return self._datastore.get_stored_token(iap_client_id=self._iap_client_id)
 
     def get_stored_token(self) -> TokenStruct | None:
-        return super().get_stored_token(self._iap_client_id, client_id=None)
+        return super().get_stored_token()
 
     # TODO: Unstatic
     @staticmethod

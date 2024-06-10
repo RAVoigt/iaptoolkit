@@ -12,6 +12,7 @@ LOG = logger.get_logger("iaptk")
 class TokenStruct:
     id_token: str
     expiry: datetime.datetime
+    token_is_new: bool = True
 
     @property
     def expired(self):
@@ -33,6 +34,8 @@ class TokenStruct:
 
 @dataclass(kw_only=True)
 class TokenRefreshStruct:
+    """
+    """
     id_token: str
     token_is_new: bool = True
 
@@ -40,10 +43,10 @@ class TokenRefreshStruct:
 @dataclass(kw_only=True)
 class TokenStructOAuth2(TokenStruct):
     refresh_token: str
-    new_refresh_token: bool = False
+    token_is_new: bool = False
 
 
 @dataclass(kw_only=True)
 class ResultAddTokenHeader:
     token_added: bool
-    token_is_fresh: bool
+    token_is_new: bool

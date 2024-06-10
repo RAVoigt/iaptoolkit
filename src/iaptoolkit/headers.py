@@ -23,7 +23,9 @@ def _sanitize_request_header(headers_dict: dict, header_key: str):
 def sanitize_request_headers(headers: dict) -> dict:
     """
     Sanitizes a headers dict to remove sensitive strings for logging purposes.
-    Returns A COPY of the dict with sensitive k/v pairs replaced. Does NOT modify in-place/by-reference.
+
+    Returns:
+        A COPY of the dict with sensitive k/v pairs replaced. Does NOT modify in-place/by-reference.
     """
     log_safe_headers = headers.copy()
 

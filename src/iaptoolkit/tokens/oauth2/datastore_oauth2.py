@@ -6,7 +6,7 @@ from kvcommon import logger
 from iaptoolkit.tokens.token_datastore import TokenDatastore
 
 
-LOG = logger.get_logger("iaptk-ds-oidc")
+LOG = logger.get_logger("iaptk-ds-oauth2")
 
 
 class TokenDatastore_OAuth2(TokenDatastore):

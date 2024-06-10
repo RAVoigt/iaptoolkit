@@ -41,7 +41,7 @@ class TokenRefreshStruct:
 
 
 @dataclass(kw_only=True)
-class TokenStructOAuth2(TokenStruct):
+class TokenStructOAuth2:
     refresh_token: str
     token_is_new: bool = False
 

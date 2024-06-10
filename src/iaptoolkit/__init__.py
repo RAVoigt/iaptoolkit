@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+import datetime
 import logging
 
 logging.getLogger(__name__).addHandler(logging.NullHandler())
@@ -18,6 +19,7 @@ from iaptoolkit.tokens.oauth2 import OAuth2
 from iaptoolkit.tokens.oidc import OIDC
 from iaptoolkit.tokens.structs import ResultAddTokenHeader
 from iaptoolkit.tokens.structs import TokenRefreshStruct
+from iaptoolkit.tokens.structs import TokenStructOAuth2
 from iaptoolkit.utils.urls import is_url_safe_for_token
 
 LOG = get_logger("iaptk")
@@ -43,11 +45,11 @@ class IAPToolkit(ABC):
 
     @abstractmethod
     def get_token(
-        self, refresh_token: str | None, bypass_cached: bool = False
+        self, refresh_token: str | None = None, bypass_cached: bool = False
     ) -> TokenRefreshStruct:
         raise NotImplementedError()
 
-    def get_token_str(self, refresh_token: str | None, bypass_cached: bool = False) -> str:
+    def get_token_str(self, refresh_token: str | None = None, bypass_cached: bool = False) -> str:
         struct = self.get_token(refresh_token=refresh_token, bypass_cached=bypass_cached)
         return struct.id_token
 
@@ -127,13 +129,16 @@ class IAPToolkit_OIDC(IAPToolkit):
     """
     OIDC-only implementation of IAPToolkit
     """
+
     _interface: OIDC
 
     def __init__(self, google_iap_client_id: str) -> None:
         super().__init__(google_iap_client_id)
         self._interface = OIDC(iap_client_id=google_iap_client_id)
 
-    def get_token(self, bypass_cached: bool = False) -> TokenRefreshStruct:
+    def get_token(
+        self, refresh_token: str | None = None, bypass_cached: bool = False
+    ) -> TokenRefreshStruct:
         try:
             return self._interface.get_token(
                 iap_client_id=self._GOOGLE_IAP_CLIENT_ID, bypass_cached=bypass_cached
@@ -163,8 +168,25 @@ class IAPToolkit_OAuth2(IAPToolkit):
         self._GOOGLE_CLIENT_SECRET = google_client_secret
         self._interface = OAuth2(iap_client_id=google_iap_client_id, client_id=google_client_id)
 
-    def get_refresh_token(self, bypass_cached: bool = False) -> t.Any:
-        pass
+    def get_refresh_token(
+        self, auth_code: str, redirect_uri: str, bypass_cached: bool = False
+    ) -> t.Any:
+
+        # TODO: Cache
+        # TODO: Expiry
+        expired = True
+
+        if expired or bypass_cached:
+            refresh_token = self._interface.get_refresh_token_from_auth_code(
+                client_id=self._GOOGLE_CLIENT_ID,
+                client_secret=self._GOOGLE_CLIENT_SECRET,
+                auth_code=auth_code,
+                redirect_uri=redirect_uri,
+            )
+
+        # TODO: Expiry
+        # TODO: Move this when implementing cache
+        return TokenStructOAuth2(refresh_token=refresh_token, token_is_new=expired or bypass_cached)
 
     def get_token(self, refresh_token: str, bypass_cached: bool = False) -> TokenRefreshStruct:
         if not self._GOOGLE_CLIENT_ID or not self._GOOGLE_CLIENT_SECRET:

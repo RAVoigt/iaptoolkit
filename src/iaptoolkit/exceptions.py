@@ -14,6 +14,10 @@ class IAPBadResponse(IAPToolkitBaseException):
     pass
 
 
+class InvalidDomain(IAPToolkitBaseException):
+    pass
+
+
 class TokenException(IAPToolkitBaseException):
     pass
 
@@ -22,7 +26,10 @@ class TokenStorageException(TokenException):
     pass
 
 
-class ServiceAccountTokenException(TokenException):
+class GoogleTokenException(TokenException):
+    """
+    Wrapper for exceptions from Google's auth lib
+    """
     def __init__(
         self, message: str, google_exception: t.Union[DefaultCredentialsError, RefreshError] | None
     ):
@@ -42,8 +49,9 @@ class ServiceAccountTokenException(TokenException):
     def retryable(self):
         return self.google_exception and self.google_exception._retryable
 
+# SA / OIDC
 
-class ServiceAccountNoDefaultCredentials(ServiceAccountTokenException):
+class ServiceAccountTokenException(GoogleTokenException):
     pass
 
 
@@ -51,5 +59,14 @@ class ServiceAccountTokenFailedRefresh(ServiceAccountTokenException):
     pass
 
 
-class InvalidDomain(IAPToolkitBaseException):
+class ServiceAccountNoDefaultCredentials(ServiceAccountTokenException):
+    pass
+
+# OAuth2 / User
+
+class OAuth2RefreshFromAuthCodeFailed(TokenException):
+    pass
+
+
+class OAuth2IDTokenFromRefreshFailed(TokenException):
     pass

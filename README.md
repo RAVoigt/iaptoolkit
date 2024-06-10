@@ -17,9 +17,9 @@ https://pypi.org/project/iaptoolkit/
 ```python
 import requests
 
-from iaptoolkit import IAPToolkit
+from iaptoolkit import IAPToolkit_OIDC
 
-iaptk = IAPToolkit(google_iap_client_id="EXAMPLE_ID_123456789ABCDEF")
+iaptk_oidc = IAPToolkit_OIDC(google_iap_client_id="EXAMPLE_ID_123456789ABCDEF")
 allowed_domains = ["example.com", ]
 
 

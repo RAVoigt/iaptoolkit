@@ -13,7 +13,7 @@ from iaptoolkit.exceptions import OAuth2RefreshFromAuthCodeFailed
 from .datastore_oauth2 import TokenDatastore_OAuth2
 
 
-LOG = logger.get_logger("iaptk")
+LOG = logger.get_logger("iaptk-oauth2")
 
 GOOGLE_OAUTH_TOKEN_URL = "https://www.googleapis.com/oauth2/v4/token"
 

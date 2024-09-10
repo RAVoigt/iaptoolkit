@@ -34,9 +34,7 @@ def sanitize_request_headers(headers: dict) -> dict:
     return log_safe_headers
 
 
-def add_token_to_request_headers(
-    request_headers: dict, id_token: str, use_auth_header: bool = False
-) -> dict:
+def add_token_to_request_headers(request_headers: dict, id_token: str, use_auth_header: bool = False) -> dict:
     """
     Adds Bearer token to headers dict. Modifies dict in-place.
     Returns True if added token is a fresh one, or False if token is from cache

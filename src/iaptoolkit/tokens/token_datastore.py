@@ -4,9 +4,11 @@ import typing as t
 from kvcommon import logger
 from kvcommon.datastore.backend import DatastoreBackend
 from kvcommon.datastore.backend import DictBackend
+
 # from kvcommon.datastore.backend import TOMLBackend
 from kvcommon.datastore import VersionedDatastore
 
+from iaptoolkit.exceptions import TokenException
 from iaptoolkit.constants import IAPTOOLKIT_CONFIG_VERSION
 
 
@@ -38,9 +40,10 @@ class TokenDatastore(VersionedDatastore):
             return
         return token_struct_dict
 
-    def store_service_account_token(
-        self, iap_client_id: str, id_token: str, token_expiry: datetime.datetime
-    ):
+    def store_service_account_token(self, iap_client_id: str, id_token: str, token_expiry: datetime.datetime):
+        if not id_token:
+            raise TokenException("TokenDatastore: Attempting to store invalid [empty] token")
+
         tokens_dict = self.get_or_create_nested_dict(self._service_account_tokens_key)
         tokens_dict[iap_client_id] = dict(id_token=id_token, token_expiry=token_expiry.isoformat())
 
@@ -61,6 +64,7 @@ class TokenDatastore(VersionedDatastore):
     # def store_oauth2_token(self, iap_client_id: str):
     #     # TODO: OAuth2
     #     raise NotImplementedError()
+
 
 datastore = TokenDatastore(DictBackend)
 

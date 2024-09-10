@@ -14,6 +14,7 @@ from iaptoolkit.tokens.token_datastore import datastore
 from iaptoolkit.exceptions import ServiceAccountTokenException
 from iaptoolkit.exceptions import ServiceAccountTokenFailedRefresh
 from iaptoolkit.exceptions import ServiceAccountNoDefaultCredentials
+from iaptoolkit.exceptions import TokenException
 from iaptoolkit.exceptions import TokenStorageException
 
 from .structs import TokenStruct
@@ -41,11 +42,7 @@ class ServiceAccount(object):
     def get_stored_token(iap_client_id: str) -> t.Optional[TokenStruct]:
         try:
             token_dict = datastore.get_stored_service_account_token(iap_client_id)
-            if (
-                not token_dict
-                or not token_dict.get("id_token", None)
-                or not token_dict.get("token_expiry", None)
-            ):
+            if not token_dict or not token_dict.get("id_token", None) or not token_dict.get("token_expiry", None):
                 LOG.debug("No stored service account token for current iap_client_id")
                 return
 
@@ -71,9 +68,7 @@ class ServiceAccount(object):
 
         except Exception as ex:
             # Err on the side of not letting token-caching break requests, hence blanket except
-            raise TokenStorageException(
-                f"Exception when trying to retrieve stored token. exception={ex}"
-            )
+            raise TokenStorageException(f"Exception when trying to retrieve stored token. exception={ex}")
 
     @staticmethod
     def _get_fresh_credentials(iap_client_id: str) -> GoogleIDTokenCredentials:
@@ -104,6 +99,8 @@ class ServiceAccount(object):
     def _get_fresh_token(iap_client_id: str) -> TokenStruct:
         google_credentials = ServiceAccount._get_fresh_credentials(iap_client_id)
         id_token: str = str(google_credentials.token)
+        if not id_token:
+            raise TokenException("Invalid [empty] token retrieved for Service Account.")
 
         # Google lib uses deprecated 'utcfromtimestamp' func as of v2.29.x
         # e.g.: datetime.datetime.utcfromtimestamp(payload["exp"])
@@ -114,9 +111,7 @@ class ServiceAccount(object):
         return TokenStruct(id_token=id_token, expiry=token_expiry)
 
     @staticmethod
-    def get_token(
-        iap_client_id: str, bypass_cached: bool = False, attempts: int = 0
-    ) -> TokenRefreshStruct:
+    def get_token(iap_client_id: str, bypass_cached: bool = False, attempts: int = 0) -> TokenRefreshStruct:
         """Retrieves an OIDC token for the current environment either from environment variable or from
         metadata service.
 
@@ -149,9 +144,7 @@ class ServiceAccount(object):
 
             ServiceAccount._store_token(iap_client_id, token_struct.id_token, token_struct.expiry)
 
-            token_refresh_struct = TokenRefreshStruct(
-                id_token=token_struct.id_token, token_is_new=not token_from_cache
-            )
+            token_refresh_struct = TokenRefreshStruct(id_token=token_struct.id_token, token_is_new=not token_from_cache)
             return token_refresh_struct
 
         except ServiceAccountTokenException as ex:
@@ -173,9 +166,7 @@ class GoogleServiceAccount(ServiceAccount):
 
     def __init__(self, iap_client_id: str) -> None:
         if not iap_client_id or not isinstance(iap_client_id, str):
-            raise ServiceAccountTokenException(
-                "Invalid iap_client_id for GoogleServiceAccount", google_exception=None
-            )
+            raise ServiceAccountTokenException("Invalid iap_client_id for GoogleServiceAccount", google_exception=None)
         self._iap_client_id = iap_client_id
         super().__init__()
 

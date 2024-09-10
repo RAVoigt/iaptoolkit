@@ -22,15 +22,15 @@ def is_url_safe_for_token(
             f"'{str(url_parts)}' (type#: {type(url_parts).__name__})"
         )
 
-    if not allowed_domains:
-        return True
-
     if allowed_domains is not None and not isinstance(allowed_domains, (list, set, tuple)):
         raise TypeError("allowed_domains must be a list, set or tuple if not None")
 
     netloc = get_netloc_without_port_from_url_parts(url_parts)
     if not netloc:
         return False
+
+    if not allowed_domains:
+        return True
 
     for domain in allowed_domains:
         if domain == "" or not isinstance(domain, str):

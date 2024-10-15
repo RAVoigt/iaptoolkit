@@ -46,24 +46,24 @@ class ServiceAccount(object):
                 LOG.debug("No stored service account token for current iap_client_id")
                 return
 
-            id_token_from_dict = token_dict.get("id_token")
-            token_expiry_from_dict = token_dict.get("token_expiry", "")
-
-            if not id_token_from_dict:
-                LOG.warning("Invalid stored ID token")
-                return
+            id_token_from_dict: str = token_dict.get("id_token", "")
+            token_expiry_from_dict: str = token_dict.get("token_expiry", "")
 
             token_expiry = ""
             try:
                 token_expiry = datetime.datetime.fromisoformat(token_expiry_from_dict)
             except (ValueError, TypeError) as ex:
-                LOG.debug("Invalid token expiry for current iap_client_id")
+                LOG.debug("Invalid token expiry for stored token - Could not parse from ISO format to datetime.")
                 return
 
-            token_struct = TokenStruct(id_token=id_token_from_dict, expiry=token_expiry)
+            token_struct = TokenStruct(id_token=id_token_from_dict, expiry=token_expiry, from_cache=True)
+            if not token_struct.valid:
+                LOG.debug("Stored service account token for current iap_client_id is INVALID")
+                return
             if token_struct.expired:
                 LOG.debug("Stored service account token for current iap_client_id has EXPIRED")
                 return
+
             return token_struct
 
         except Exception as ex:
@@ -108,10 +108,10 @@ class ServiceAccount(object):
         # Python datetimes assume local TZ, and we want to explicitly only work in UTC here.
         token_expiry = google_credentials.expiry.replace(tzinfo=datetime.timezone.utc)
 
-        return TokenStruct(id_token=id_token, expiry=token_expiry)
+        return TokenStruct(id_token=id_token, expiry=token_expiry, from_cache=False)
 
     @staticmethod
-    def get_token(iap_client_id: str, bypass_cached: bool = False, attempts: int = 0) -> TokenRefreshStruct:
+    def get_token(iap_client_id: str, bypass_cached: bool = False, attempts: int = 0) -> TokenStruct:
         """Retrieves an OIDC token for the current environment either from environment variable or from
         metadata service.
 
@@ -135,17 +135,17 @@ class ServiceAccount(object):
         use_cache = not bypass_cached
 
         try:
-            token_from_cache = False
-            token_struct = (use_cache and ServiceAccount.get_stored_token(iap_client_id)) or None
-            if use_cache and token_struct:
-                token_from_cache = True
-            else:
+            token_struct: TokenStruct | None = None
+
+            if use_cache:
+                token_struct = ServiceAccount.get_stored_token(iap_client_id)
+
+            if not token_struct:
                 token_struct = ServiceAccount._get_fresh_token(iap_client_id)
+                if use_cache:
+                    ServiceAccount._store_token(iap_client_id, token_struct.id_token, token_struct.expiry)
 
-            ServiceAccount._store_token(iap_client_id, token_struct.id_token, token_struct.expiry)
-
-            token_refresh_struct = TokenRefreshStruct(id_token=token_struct.id_token, token_is_new=not token_from_cache)
-            return token_refresh_struct
+            return token_struct
 
         except ServiceAccountTokenException as ex:
             attempts += 1
@@ -173,7 +173,7 @@ class GoogleServiceAccount(ServiceAccount):
     def get_stored_token(self) -> t.Optional[TokenStruct]:
         return ServiceAccount.get_stored_token(self._iap_client_id)
 
-    def get_token(self, bypass_cached: bool = False, attempts: int = 0) -> TokenRefreshStruct:
+    def get_token(self, bypass_cached: bool = False, attempts: int = 0) -> TokenStruct:
         return ServiceAccount.get_token(
             iap_client_id=self._iap_client_id, bypass_cached=bypass_cached, attempts=attempts
         )

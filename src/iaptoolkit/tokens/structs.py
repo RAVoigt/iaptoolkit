@@ -8,10 +8,18 @@ from kvcommon import logger
 LOG = logger.get_logger("iaptk")
 
 
+def validate_token(token: str | None) -> bool:
+    if not isinstance(token, str) or token.strip() == "":
+        return False
+
+    return True
+
+
 @dataclass(kw_only=True)
 class TokenStruct:
     id_token: str
     expiry: datetime.datetime
+    from_cache: bool = False
 
     @property
     def expired(self):
@@ -30,17 +38,28 @@ class TokenStruct:
             LOG.error("Exception when checking token expiry. exception=%s", ex)
             return True
 
+    @property
+    def valid(self):
+        return validate_token(self.id_token)
+
 
 @dataclass(kw_only=True)
 class TokenRefreshStruct:
     id_token: str
-    token_is_new: bool = True
+    from_cache: bool = False
 
+    @property
+    def valid(self):
+        return validate_token(self.id_token)
 
 @dataclass(kw_only=True)
 class TokenStructOAuth2(TokenStruct):
     refresh_token: str
-    new_refresh_token: bool = False
+    from_cache: bool = False
+
+    @property
+    def valid(self):
+        return validate_token(self.refresh_token)
 
 
 @dataclass(kw_only=True)

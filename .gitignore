@@ -1,6 +1,7 @@
 .venv*
 .win_venv*
 __pycache__/
+__scratch/
 *.txt
 *.log
 *.code-workspace

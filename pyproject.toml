@@ -27,7 +27,7 @@ python = "^3.11"
 google-auth = "^2.29.0"
 requests = "^2.31.0"
 toml = "^0.10.2"
-kvcommon = "^0.2.0"
+kvcommon = {extras = ["k8s"], version = "^0.2.3"}
 
 [tool.poetry.dev-dependencies]
 black = "*"
@@ -39,7 +39,3 @@ pytest = "*"
 pytest-cov = "*"
 pytest-socket = "*"
 pyfakefs = "^5.3.2"
-
-# [tool.poetry.extras]
-# flask = ["flask"]
-# k8s = ["kubernetes"]

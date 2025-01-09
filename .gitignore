@@ -6,3 +6,4 @@ __scratch/
 *.log
 *.code-workspace
 *.vscode/
+.gitattributes

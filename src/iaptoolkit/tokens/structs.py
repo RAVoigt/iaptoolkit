@@ -52,6 +52,7 @@ class TokenRefreshStruct:
     def valid(self):
         return validate_token(self.id_token)
 
+
 @dataclass(kw_only=True)
 class TokenStructOAuth2(TokenStruct):
     refresh_token: str

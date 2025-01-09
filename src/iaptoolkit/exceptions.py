@@ -22,6 +22,10 @@ class TokenStorageException(TokenException):
     pass
 
 
+class IAPClientIDException(IAPToolkitBaseException):
+    pass
+
+
 class ServiceAccountTokenException(TokenException):
     def __init__(self, message: str, google_exception: t.Union[DefaultCredentialsError, RefreshError] | None):
         self.google_exception = google_exception

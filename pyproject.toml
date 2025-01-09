@@ -8,8 +8,8 @@ authors = [
 readme = "README.md"
 requires-python = ">=3.11"
 
-[tool.poetry]
-packages = [{include = "iaptoolkit"}]
+# [tool.poetry]
+# packages = [{include = "iaptoolkit"}]
 
 [build-system]
 requires = ["poetry-core>=2.0"]

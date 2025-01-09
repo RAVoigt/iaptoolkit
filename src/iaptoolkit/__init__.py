@@ -1,5 +1,6 @@
 from __future__ import annotations
-
+from abc import ABC
+from abc import abstractmethod
 import logging
 
 logging.getLogger(__name__).addHandler(logging.NullHandler())
@@ -8,61 +9,53 @@ import typing as t
 from urllib.parse import ParseResult
 from urllib.parse import urlparse
 
-from kvcommon import logger
+from kvcommon.logger import get_logger
 
+from iaptoolkit.constants import DEFAULT_USE_AUTH_HEADER
 from iaptoolkit import headers
 from iaptoolkit.exceptions import ServiceAccountTokenException
-from iaptoolkit.tokens.service_account import ServiceAccount
+from iaptoolkit.tokens.oauth2 import OAuth2
+from iaptoolkit.tokens.oauth2.datastore_oauth2 import TokenDatastore_OAuth2
+from iaptoolkit.tokens.oidc import OIDC
 from iaptoolkit.tokens.structs import ResultAddTokenHeader
-
-from iaptoolkit.tokens.structs import TokenRefreshStruct
 from iaptoolkit.tokens.structs import TokenStruct
+
+from iaptoolkit.tokens.structs import TokenStruct
+
 from iaptoolkit.utils.urls import is_url_safe_for_token
 
-LOG = logger.get_logger("iaptk")
+LOG = get_logger("iaptk")
 
 
-class IAPToolkit:
+class IAPToolkit(ABC):
     """
-    Class to encapsulate client-specific vars and forward them to static functions
+    Abstract base class wrapping up core iaptoolkit functionality in a single interface
+    In practice, you should use IAPToolkit_OIDC or IAPToolkit_OAuth2 for
+        OIDC(ServiceAccounts) or OAuth2(Users) respectively.
     """
 
     _GOOGLE_IAP_CLIENT_ID: str
 
-    def __init__(
-        self,
-        google_iap_client_id: str,
-    ) -> None:
+    def __init__(self, google_iap_client_id: str) -> None:
         self._GOOGLE_IAP_CLIENT_ID = google_iap_client_id
 
     @staticmethod
     def sanitize_request_headers(request_headers: dict) -> dict:
         return headers.sanitize_request_headers(request_headers)
 
-    def get_token_oidc(self, bypass_cached: bool = False) -> TokenStruct:
-        try:
-            return ServiceAccount.get_token(iap_client_id=self._GOOGLE_IAP_CLIENT_ID, bypass_cached=bypass_cached)
-        except ServiceAccountTokenException as ex:
-            LOG.debug(ex)
-            raise
-
-    def get_token_oidc_str(self, bypass_cached: bool = False) -> str:
-        struct = self.get_token_oidc(bypass_cached=bypass_cached)
-        return struct.id_token
-
-    def get_token_oauth2(self, bypass_cached: bool = False) -> TokenRefreshStruct:
-        # TODO
+    @abstractmethod
+    def get_token(self, refresh_token: str | None = None, bypass_cached: bool = False) -> TokenStruct:
         raise NotImplementedError()
 
-    def get_token_oauth2_str(self, bypass_cached: bool = False) -> str:
-        struct = self.get_token_oauth2(bypass_cached=bypass_cached)
+    def get_token_str(self, refresh_token: str | None = None, bypass_cached: bool = False) -> str:
+        struct = self.get_token(refresh_token=refresh_token, bypass_cached=bypass_cached)
         return struct.id_token
 
     def get_token_and_add_to_headers(
         self,
         request_headers: dict,
-        use_oauth2: bool = False,
-        use_auth_header: bool = False,
+        use_auth_header: bool = DEFAULT_USE_AUTH_HEADER,
+        refresh_token: str | None = None,
         bypass_cached: bool = False,
     ) -> bool:
         """
@@ -73,23 +66,19 @@ class IAPToolkit:
             request_headers: dict of headers to insert into
             use_oauth2: Use OAuth2.0 credentials and respective token, else use OIDC (default)
                 As a general guideline, OIDC is the assumed default approach for ServiceAccounts.
-            use_auth_header: If true, use the 'Authorization' header instead of 'Proxy-Authorization'
+            use_auth_header: If true, use the 'Authorization' header instead of 'Proxy-Authorization'.
+                Note that in this case 'Proxy-Authorization' will be used instead if 'Authorization'
+                already exists in headers.
+            refresh_token: Refresh token for OAuth2.0 (Unused by OIDC)
 
         Returns:
             True if token retrieved from cache, False if fresh from API
 
 
         """
-        id_token = None
-        from_cache = False
-        if use_oauth2:
-            token_refresh_struct: TokenRefreshStruct = self.get_token_oauth2(bypass_cached=bypass_cached)
-            id_token = token_refresh_struct.id_token
-            from_cache = token_refresh_struct.from_cache
-        else:
-            token_struct: TokenStruct = self.get_token_oidc(bypass_cached=bypass_cached)
-            id_token = token_struct.id_token
-            from_cache = token_struct.from_cache
+        token_refresh_struct = self.get_token(refresh_token=refresh_token, bypass_cached=bypass_cached)
+        id_token = token_refresh_struct.id_token
+        from_cache = token_refresh_struct.from_cache
 
         headers.add_token_to_request_headers(
             request_headers=request_headers,
@@ -114,8 +103,8 @@ class IAPToolkit:
         url: str | ParseResult,
         request_headers: dict,
         valid_domains: t.List[str] | None = None,
-        use_oauth2: bool = False,
-        use_auth_header: bool = False,
+        use_auth_header: bool = DEFAULT_USE_AUTH_HEADER,
+        refresh_token: str | None = None,
         bypass_cached: bool = False,
     ) -> ResultAddTokenHeader:
         """
@@ -128,14 +117,15 @@ class IAPToolkit:
             url: URL string or urllib.ParseResult to check for validity
             request_headers: Dict of headers to insert into
             valid_domains: List of domains to validate URL against
-            use_oauth2: Passed to get_token_and_add_to_headers() to determine if OAuth2.0 is used or OIDC (default)
+            use_auth_header: If true, use the 'Authorization' header instead of 'Proxy-Authorization' for IAP
+            refresh_token: Refresh token for OAuth2.0 (Unused by OIDC)
         """
 
         if self.is_url_safe_for_token(url=url, valid_domains=valid_domains):
             token_is_fresh = self.get_token_and_add_to_headers(
                 request_headers=request_headers,
-                use_oauth2=use_oauth2,
                 use_auth_header=use_auth_header,
+                refresh_token=refresh_token,
                 bypass_cached=bypass_cached,
             )
             return ResultAddTokenHeader(token_added=True, token_is_fresh=token_is_fresh)
@@ -150,45 +140,21 @@ class IAPToolkit:
 
 class IAPToolkit_OIDC(IAPToolkit):
     """
-    Convenience subclass of IAPToolkit for scenarios where OIDC will always be used, never OAuth2
+    OIDC-only implementation of IAPToolkit
     """
 
-    def get_token_oauth2(self, *args, **kwargs):
-        raise NotImplementedError("Cannot call OAuth2 methods on OIDC-only instance of IAPToolkit.")
+    _interface: OIDC
 
-    def get_token_oauth2_str(self, *args, **kwargs):
-        raise NotImplementedError("Cannot call OAuth2 methods on OIDC-only instance of IAPToolkit.")
+    def __init__(self, google_iap_client_id: str) -> None:
+        super().__init__(google_iap_client_id)
+        self._interface = OIDC(iap_client_id=google_iap_client_id)
 
-    def get_token_and_add_to_headers(
-        self,
-        request_headers: dict,
-        use_auth_header: bool = False,
-        use_oauth2: bool = False,
-        bypass_cached: bool = False,
-    ) -> bool:
-        return super().get_token_and_add_to_headers(
-            request_headers=request_headers,
-            use_oauth2=use_oauth2,
-            use_auth_header=use_auth_header,
-            bypass_cached=bypass_cached,
-        )
-
-    def check_url_and_add_token_header(
-        self,
-        url: str | ParseResult,
-        request_headers: dict,
-        valid_domains: t.List[str] | None = None,
-        use_auth_header: bool = False,
-        bypass_cached: bool = False,
-    ) -> ResultAddTokenHeader:
-        return super().check_url_and_add_token_header(
-            url,
-            request_headers=request_headers,
-            valid_domains=valid_domains,
-            use_oauth2=False,
-            use_auth_header=use_auth_header,
-            bypass_cached=bypass_cached,
-        )
+    def get_token(self, refresh_token: str | None = None, bypass_cached: bool = False) -> TokenStruct:
+        try:
+            return self._interface.get_token(iap_client_id=self._GOOGLE_IAP_CLIENT_ID, bypass_cached=bypass_cached)
+        except ServiceAccountTokenException as ex:
+            LOG.debug(ex)
+            raise
 
 
 class IAPToolkit_OAuth2(IAPToolkit):
@@ -198,6 +164,7 @@ class IAPToolkit_OAuth2(IAPToolkit):
 
     _GOOGLE_CLIENT_ID: str
     _GOOGLE_CLIENT_SECRET: str
+    _interface: OAuth2
 
     def __init__(
         self,
@@ -208,40 +175,50 @@ class IAPToolkit_OAuth2(IAPToolkit):
         super().__init__(google_iap_client_id=google_iap_client_id)
         self._GOOGLE_CLIENT_ID = google_client_id
         self._GOOGLE_CLIENT_SECRET = google_client_secret
-
-    def get_token_oidc(self, *args, **kwargs):
-        raise NotImplementedError("Cannot call OIDC methods on OAuth2-only instance of IAPToolkit.")
-
-    def get_token_oidc_str(self, *args, **kwargs):
-        raise NotImplementedError("Cannot call OIDC methods on OAuth2-only instance of IAPToolkit.")
-
-    def get_token_and_add_to_headers(
-        self,
-        request_headers: dict,
-        use_auth_header: bool = False,
-        use_oauth2: bool = True,
-        bypass_cached: bool = False,
-    ) -> bool:
-        return super().get_token_and_add_to_headers(
-            request_headers=request_headers,
-            use_oauth2=use_oauth2,
-            use_auth_header=use_auth_header,
-            bypass_cached=bypass_cached,
+        self._interface = OAuth2(
+            iap_client_id=google_iap_client_id,
+            client_id=google_client_id,
+            client_secret=google_client_secret,
         )
+
+    def get_refresh_token_from_auth_code(self, auth_code: str, redirect_uri: str) -> TokenStruct:
+        return self._interface.get_refresh_token_from_auth_code(auth_code=auth_code, redirect_uri=redirect_uri)
+
+    def get_refresh_token(self) -> TokenStruct | None:
+        refresh_token = self._interface.get_stored_refresh_token()
+        if refresh_token and refresh_token.expired:
+            return None
+        return refresh_token
+
+    def get_token(self, refresh_token: TokenStruct | str, bypass_cached: bool = False) -> TokenStruct | None:
+        token_expired = False
+        id_token: TokenStruct | None = None
+
+        if bypass_cached:
+            token_expired = True
+        else:
+            id_token: TokenStruct | None = self._interface._get_stored_token()
+            token_expired = not id_token or id_token.expired
+
+        if not id_token or token_expired:
+            if isinstance(refresh_token, TokenStruct):
+                refresh_token = refresh_token.id_token
+            id_token = self._interface.get_id_token_from_refresh_token(refresh_token=refresh_token)
+
+        return id_token
 
     def check_url_and_add_token_header(
         self,
         url: str | ParseResult,
         request_headers: dict,
+        refresh_token: str,
         valid_domains: t.List[str] | None = None,
-        use_auth_header: bool = False,
-        bypass_cached: bool = False,
+        use_auth_header: bool = DEFAULT_USE_AUTH_HEADER,
     ) -> ResultAddTokenHeader:
         return super().check_url_and_add_token_header(
             url=url,
             request_headers=request_headers,
             valid_domains=valid_domains,
-            use_oauth2=True,
             use_auth_header=use_auth_header,
-            bypass_cached=bypass_cached,
+            refresh_token=refresh_token,
         )

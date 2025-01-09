@@ -1,14 +1,14 @@
 import datetime
+import hashlib
+import pathlib
 import typing as t
+from abc import abstractmethod
 
 from kvcommon import logger
 from kvcommon.datastore.backend import DatastoreBackend
-from kvcommon.datastore.backend import DictBackend
-
-# from kvcommon.datastore.backend import TOMLBackend
+from kvcommon.datastore.backend import TOMLBackend
 from kvcommon.datastore import VersionedDatastore
 
-from iaptoolkit.exceptions import TokenException
 from iaptoolkit.constants import IAPTOOLKIT_CONFIG_VERSION
 
 
@@ -16,11 +16,16 @@ LOG = logger.get_logger("iaptk-ds")
 
 
 class TokenDatastore(VersionedDatastore):
-    _service_account_tokens_key = "service_account_tokens"
+    _tokens_key: str
 
     def __init__(self, backend: DatastoreBackend | type[DatastoreBackend]) -> None:
         super().__init__(backend=backend, config_version=IAPTOOLKIT_CONFIG_VERSION)
         self._ensure_tokens_dict()
+
+    def _migrate_version(self):
+        # Override
+        self.discard_existing_tokens()
+        return super()._migrate_version()
 
     def _ensure_tokens_dict(self):
         tokens_dict = self.get_or_create_nested_dict("tokens")
@@ -28,45 +33,38 @@ class TokenDatastore(VersionedDatastore):
             tokens_dict["refresh"] = None
         self.set_value("tokens", tokens_dict)
 
+    @staticmethod
+    def _insert_hashed_dict_entry(target: dict, source_key: str, value: t.Any):
+        hash_obj = hashlib.sha256(source_key.encode("utf-8"))
+        hex_digest = hash_obj.hexdigest()
+        target[hex_digest] = value
+
+    @staticmethod
+    def _retrieve_hashed_dict_entry(target: dict, source_key: str) -> t.Any:
+        hash_obj = hashlib.sha256(source_key.encode("utf-8"))
+        hex_digest = hash_obj.hexdigest()
+        # TODO: Check collisions/pre-existing keys?
+        return target.get(hex_digest)
+
     def discard_existing_tokens(self):
         LOG.debug("Discarding existing tokens.")
         self.update_data(tokens={})
 
-    def get_stored_service_account_token(self, iap_client_id: str) -> t.Optional[dict]:
-        tokens_dict = self.get_or_create_nested_dict(self._service_account_tokens_key)
-        token_struct_dict = tokens_dict.get(iap_client_id, None)
-        if not token_struct_dict:
-            LOG.debug("No stored service account token for current iap_client_id")
-            return
-        return token_struct_dict
+    @abstractmethod
+    def get_stored_token(self, iap_client_id: str) -> dict | None:
+        raise NotImplementedError
 
-    def store_service_account_token(self, iap_client_id: str, id_token: str, token_expiry: datetime.datetime):
-        if not id_token:
-            raise TokenException("TokenDatastore: Attempting to store invalid [empty] token")
-
-        tokens_dict = self.get_or_create_nested_dict(self._service_account_tokens_key)
-        tokens_dict[iap_client_id] = dict(id_token=id_token, token_expiry=token_expiry.isoformat())
-
-        try:
-            self.update_data(service_account_tokens=tokens_dict)
-        except OSError as ex:
-            LOG.error("Failed to store service account token for re-use. exception=%s", ex)
-
-    def _migrate_version(self):
-        # Override
-        self.discard_existing_tokens()
-        return super()._migrate_version()
-
-    # def get_stored_oauth2_token(self, iap_client_id: str):
-    #     # TODO: OAuth2
-    #     raise NotImplementedError()
-
-    # def store_oauth2_token(self, iap_client_id: str):
-    #     # TODO: OAuth2
-    #     raise NotImplementedError()
+    @abstractmethod
+    def store_token(self, iap_client_id: str, id_token: str, token_expiry: datetime.datetime):
+        raise NotImplementedError
 
 
-datastore = TokenDatastore(DictBackend)
+class TokenDatastoreTOML(TokenDatastore):
+    def __init__(self, storage_dir_path: str | pathlib.Path, filename: str | pathlib.Path) -> None:
+        super().__init__(backend=TOMLBackend(storage_dir_path=storage_dir_path, filename=filename))
+
+
+# datastore = TokenDatastore(DictBackend)
 
 # if PERSISTENT_DATASTORE_ENABLED:
 #     datastore_toml = TokenDatastore(TOMLBackend(PERSISTENT_DATASTORE_PATH, PERSISTENT_DATASTORE_USERNAME))

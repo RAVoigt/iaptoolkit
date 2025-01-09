@@ -15,14 +15,24 @@ def validate_token(token: str | None) -> bool:
     return True
 
 
-@dataclass(kw_only=True)
+# @dataclass(kw_only=True)
 class TokenStruct:
     id_token: str
     expiry: datetime.datetime
     from_cache: bool = False
 
+    def __init__(self, id_token: str, expiry: datetime.datetime, from_cache: bool = False) -> None:
+        if not id_token:
+            raise ValueError("Empty/Invalid id_token for TokenStruct")
+        if not isinstance(expiry, datetime.datetime):
+            raise ValueError("Invalid expiry for TokenStruct")
+        self.id_token = id_token
+        self.expiry = expiry
+        self.from_cache = from_cache
+
+
     @property
-    def expired(self):
+    def expired(self) -> bool:
         try:
             if not self.expiry:
                 # Note that this differs from Google's assumption that an expiry of 'None' means a non-expiring token.
@@ -33,6 +43,9 @@ class TokenStruct:
             skewed_expiry = self.expiry - datetime.timedelta(seconds=60)
             return datetime.datetime.now(datetime.UTC) >= skewed_expiry
 
+        except TypeError as ex:
+            LOG.error("TypeError Exception when checking token expiry. exception=%s", ex)
+            return False
         except Exception as ex:
             # TODO: Get rid of blanket-except once we have better test coverage
             LOG.error("Exception when checking token expiry. exception=%s", ex)
@@ -41,26 +54,6 @@ class TokenStruct:
     @property
     def valid(self):
         return validate_token(self.id_token)
-
-
-@dataclass(kw_only=True)
-class TokenRefreshStruct:
-    id_token: str
-    from_cache: bool = False
-
-    @property
-    def valid(self):
-        return validate_token(self.id_token)
-
-
-@dataclass(kw_only=True)
-class TokenStructOAuth2(TokenStruct):
-    refresh_token: str
-    from_cache: bool = False
-
-    @property
-    def valid(self):
-        return validate_token(self.refresh_token)
 
 
 @dataclass(kw_only=True)

@@ -1,6 +1,6 @@
 [project]
 name = "iaptoolkit"
-version = "0.3.4"
+version = "0.4.0"
 description = "Library of common utils for interacting with Identity-Aware Proxies"
 authors = [
     {name = "Rob Voigt", email = "code@ravoigt.com"}
@@ -33,7 +33,7 @@ python = "^3.11"
 google-auth = "^2.29.0"
 requests = "^2.31.0"
 toml = "^0.10.2"
-kvcommon = {extras = ["k8s"], version = "^0.2.4"}
+kvcommon = {extras = ["k8s"], version = "^0.2.6"}
 
 [tool.poetry.group.dev.dependencies]
 black = "*"

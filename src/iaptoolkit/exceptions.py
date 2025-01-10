@@ -18,6 +18,10 @@ class TokenException(IAPToolkitBaseException):
     pass
 
 
+class HeaderException(TokenException):
+    pass
+
+
 class TokenStorageException(TokenException):
     pass
 
@@ -54,4 +58,12 @@ class ServiceAccountTokenFailedRefresh(ServiceAccountTokenException):
 
 
 class InvalidDomain(IAPToolkitBaseException):
+    pass
+
+
+class OAuth2RefreshFromAuthCodeFailed(TokenException):
+    pass
+
+
+class OAuth2IDTokenFromRefreshFailed(TokenException):
     pass

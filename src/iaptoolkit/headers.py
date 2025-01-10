@@ -2,8 +2,10 @@ import typing as t
 from urllib.parse import urlparse
 from kvcommon import logger
 
+from iaptoolkit.constants import DEFAULT_USE_AUTH_HEADER
 from iaptoolkit.constants import GOOGLE_IAP_AUTH_HEADER
 from iaptoolkit.constants import GOOGLE_IAP_AUTH_HEADER_PROXY
+from iaptoolkit.exceptions import HeaderException
 
 LOG = logger.get_logger("iaptk")
 
@@ -23,7 +25,9 @@ def _sanitize_request_header(headers_dict: dict, header_key: str):
 def sanitize_request_headers(headers: dict) -> dict:
     """
     Sanitizes a headers dict to remove sensitive strings for logging purposes.
-    Returns A COPY of the dict with sensitive k/v pairs replaced. Does NOT modify in-place/by-reference.
+
+    Returns:
+        A COPY of the dict with sensitive k/v pairs replaced. Does NOT modify in-place/by-reference.
     """
     log_safe_headers = headers.copy()
 
@@ -34,14 +38,16 @@ def sanitize_request_headers(headers: dict) -> dict:
     return log_safe_headers
 
 
-def add_token_to_request_headers(request_headers: dict, id_token: str, use_auth_header: bool = False) -> dict:
+def add_token_to_request_headers(
+    request_headers: dict, id_token: str, use_auth_header: bool = DEFAULT_USE_AUTH_HEADER
+) -> dict:
     """
     Adds Bearer token to headers dict. Modifies dict in-place.
     Returns True if added token is a fresh one, or False if token is from cache
 
     Params:
         request_headers: Existing dict of request headers to mutate
-        use_auth_header: If True (default), use 'Authorization' header instead of 'Proxy-Authorization'
+        use_auth_header: If True, use 'Authorization' header instead of 'Proxy-Authorization'
 
     Returns:
         True if the added token is newly-retrieved
@@ -52,7 +58,6 @@ def add_token_to_request_headers(request_headers: dict, id_token: str, use_auth_
     auth_header_str = "Bearer {}".format(id_token)
 
     # Use 'Proxy-Authorization' header by default
-    auth_header_key = GOOGLE_IAP_AUTH_HEADER_PROXY
 
     if use_auth_header:
         # Default to use of 'Authorization' header instead of 'Proxy-Authorization'
@@ -62,13 +67,19 @@ def add_token_to_request_headers(request_headers: dict, id_token: str, use_auth_
         # `Authorization` is already in use
         if GOOGLE_IAP_AUTH_HEADER not in request_headers:
             request_headers[GOOGLE_IAP_AUTH_HEADER] = auth_header_str
-            auth_header_key = GOOGLE_IAP_AUTH_HEADER
         else:
+            request_headers[GOOGLE_IAP_AUTH_HEADER_PROXY] = auth_header_str
             LOG.debug(
                 "'use_auth_header' is True but 'Authorization' header already exists. "
                 "Adding IAP token to Proxy-Authorization header only."
             )
-
-    request_headers[auth_header_key] = auth_header_str
+    else:
+        if GOOGLE_IAP_AUTH_HEADER_PROXY not in request_headers:
+            request_headers[GOOGLE_IAP_AUTH_HEADER_PROXY] = auth_header_str
+        else:
+            raise HeaderException(
+                "Header already exists in request headers - Cannot add IAP token to: "
+                f"'{GOOGLE_IAP_AUTH_HEADER_PROXY}'"
+            )
 
     return request_headers

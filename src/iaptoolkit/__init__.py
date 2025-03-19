@@ -29,10 +29,7 @@ class IAPToolkit:
 
     _GOOGLE_IAP_CLIENT_ID: str
 
-    def __init__(
-        self,
-        google_iap_client_id: str,
-    ) -> None:
+    def __init__(self, google_iap_client_id: str) -> None:
         self._GOOGLE_IAP_CLIENT_ID = google_iap_client_id
 
     @staticmethod
@@ -41,7 +38,9 @@ class IAPToolkit:
 
     def get_token_oidc(self, bypass_cached: bool = False) -> TokenStruct:
         try:
-            return ServiceAccount.get_token(iap_client_id=self._GOOGLE_IAP_CLIENT_ID, bypass_cached=bypass_cached)
+            return ServiceAccount.get_token(
+                iap_client_id=self._GOOGLE_IAP_CLIENT_ID, bypass_cached=bypass_cached,
+            )
         except ServiceAccountTokenException as ex:
             LOG.debug(ex)
             raise
@@ -92,17 +91,14 @@ class IAPToolkit:
             from_cache = token_struct.from_cache
 
         headers.add_token_to_request_headers(
-            request_headers=request_headers,
-            id_token=id_token,
-            use_auth_header=use_auth_header,
+            request_headers=request_headers, id_token=id_token, use_auth_header=use_auth_header,
         )
 
         return from_cache
 
     @staticmethod
     def is_url_safe_for_token(
-        url: str | ParseResult,
-        valid_domains: t.Optional[t.List[str] | t.Set[str] | t.Tuple[str]] = None,
+        url: str | ParseResult, valid_domains: t.Optional[t.List[str] | t.Set[str] | t.Tuple[str]] = None,
     ):
         if not isinstance(url, ParseResult):
             url = urlparse(url)
@@ -199,12 +195,7 @@ class IAPToolkit_OAuth2(IAPToolkit):
     _GOOGLE_CLIENT_ID: str
     _GOOGLE_CLIENT_SECRET: str
 
-    def __init__(
-        self,
-        google_iap_client_id: str,
-        google_client_id: str,
-        google_client_secret: str,
-    ) -> None:
+    def __init__(self, google_iap_client_id: str, google_client_id: str, google_client_secret: str,) -> None:
         super().__init__(google_iap_client_id=google_iap_client_id)
         self._GOOGLE_CLIENT_ID = google_client_id
         self._GOOGLE_CLIENT_SECRET = google_client_secret

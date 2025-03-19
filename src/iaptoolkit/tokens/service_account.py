@@ -42,7 +42,11 @@ class ServiceAccount(object):
     def get_stored_token(iap_client_id: str) -> t.Optional[TokenStruct]:
         try:
             token_dict = datastore.get_stored_service_account_token(iap_client_id)
-            if not token_dict or not token_dict.get("id_token", None) or not token_dict.get("token_expiry", None):
+            if (
+                not token_dict
+                or not token_dict.get("id_token", None)
+                or not token_dict.get("token_expiry", None)
+            ):
                 LOG.debug("No stored service account token for current iap_client_id")
                 return
 
@@ -53,7 +57,9 @@ class ServiceAccount(object):
             try:
                 token_expiry = datetime.datetime.fromisoformat(token_expiry_from_dict)
             except (ValueError, TypeError) as ex:
-                LOG.debug("Invalid token expiry for stored token - Could not parse from ISO format to datetime.")
+                LOG.debug(
+                    "Invalid token expiry for stored token - Could not parse from ISO format to datetime."
+                )
                 return
 
             token_struct = TokenStruct(id_token=id_token_from_dict, expiry=token_expiry, from_cache=True)
@@ -90,8 +96,7 @@ class ServiceAccount(object):
             # Likely attempting to get a token for a service account in an environment that
             # doesn't have one attached.
             raise ServiceAccountTokenFailedRefresh(
-                message="Failed to get ServiceAccount token: Refreshing token failed.",
-                google_exception=ex,
+                message="Failed to get ServiceAccount token: Refreshing token failed.", google_exception=ex,
             )
         return credentials
 
@@ -166,7 +171,9 @@ class GoogleServiceAccount(ServiceAccount):
 
     def __init__(self, iap_client_id: str) -> None:
         if not iap_client_id or not isinstance(iap_client_id, str):
-            raise ServiceAccountTokenException("Invalid iap_client_id for GoogleServiceAccount", google_exception=None)
+            raise ServiceAccountTokenException(
+                "Invalid iap_client_id for GoogleServiceAccount", google_exception=None
+            )
         self._iap_client_id = iap_client_id
         super().__init__()
 

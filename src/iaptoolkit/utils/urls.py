@@ -15,7 +15,7 @@ LOG = logger.get_logger("iaptk")
 
 
 def is_url_safe_for_token(
-    url_parts: ParseResult, allowed_domains: t.Optional[t.List[str] | t.Set[str] | t.Tuple[str]] = None
+    url_parts: ParseResult, allowed_domains: t.Optional[t.List[str] | t.Set[str] | t.Tuple[str]] = None,
 ) -> bool:
     """Determines if the given url is considered a safe to receive a token in request headers.
 
@@ -40,7 +40,8 @@ def is_url_safe_for_token(
     for domain in allowed_domains:
         if domain == "" or not isinstance(domain, str):
             raise InvalidDomain(
-                f"Empty or non-string domain in allowed_domains: " f"'{str(domain)}' (type#: {type(domain).__name__})"
+                f"Empty or non-string domain in allowed_domains: "
+                f"'{str(domain)}' (type#: {type(domain).__name__})"
             )
 
         if netloc.endswith(domain):

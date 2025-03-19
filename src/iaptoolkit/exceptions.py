@@ -55,3 +55,11 @@ class ServiceAccountTokenFailedRefresh(ServiceAccountTokenException):
 
 class InvalidDomain(IAPToolkitBaseException):
     pass
+
+
+class PublicKeyException(IAPToolkitBaseException):
+    pass
+
+
+class JWTVerificationFailure(IAPToolkitBaseException):
+    pass

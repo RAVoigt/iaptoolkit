@@ -1,6 +1,6 @@
 [project]
 name = "iaptoolkit"
-version = "0.3.5"
+version = "0.3.6"
 description = "Library of common utils for interacting with Identity-Aware Proxies"
 authors = [
     {name = "Rob Voigt", email = "code@ravoigt.com"}

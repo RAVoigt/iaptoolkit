@@ -64,7 +64,7 @@ class GoogleIAPKeys:
 google_public_keys: GoogleIAPKeys | None = None
 
 
-def verify_iap_jwt(iap_jwt: str, expected_audience: str) -> str:
+def verify_iap_jwt(iap_jwt: str, expected_audience: str|None) -> str:
     global google_public_keys  # Use as singleton
     if not google_public_keys:
         google_public_keys = GoogleIAPKeys()
@@ -75,8 +75,7 @@ def verify_iap_jwt(iap_jwt: str, expected_audience: str) -> str:
     email = decoded_jwt.get("email")
     audience = decoded_jwt.get("aud")
 
-    if audience != expected_audience:
-        print("Invalid audience:", audience)
+    if expected_audience and audience != expected_audience:
         raise JWTVerificationFailure("Audience mismatch when verifying IAP JWT")
 
     return email

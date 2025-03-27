@@ -3,10 +3,14 @@ import json
 import requests
 
 from google.auth import jwt
+from google.auth.exceptions import InvalidValue
+from google.auth.exceptions import MalformedError
 
 from iaptoolkit.constants import GOOGLE_IAP_PUBLIC_KEY_URL
 from iaptoolkit.exceptions import PublicKeyException
-from iaptoolkit.exceptions import JWTVerificationFailure
+from iaptoolkit.exceptions import JWTInvalidData
+from iaptoolkit.exceptions import JWTInvalidAudience
+from iaptoolkit.exceptions import JWTMalformed
 
 
 class GooglePublicKeyException(PublicKeyException):
@@ -69,13 +73,18 @@ def verify_iap_jwt(iap_jwt: str, expected_audience: str|None) -> str:
     if not google_public_keys:
         google_public_keys = GoogleIAPKeys()
 
-    decoded_jwt = jwt.decode(iap_jwt, certs=google_public_keys.certs, verify=True)
+    try:
+        decoded_jwt = jwt.decode(iap_jwt, certs=google_public_keys.certs, verify=True)
+    except InvalidValue as ex:
+        raise JWTInvalidData(google_exception=ex)
+    except MalformedError as ex:
+        raise JWTMalformed(google_exception=ex)
 
     # Extract claims
     email = decoded_jwt.get("email")
     audience = decoded_jwt.get("aud")
 
     if expected_audience and audience != expected_audience:
-        raise JWTVerificationFailure("Audience mismatch when verifying IAP JWT")
+        raise JWTInvalidAudience()
 
     return email

@@ -62,4 +62,31 @@ class PublicKeyException(IAPToolkitBaseException):
 
 
 class JWTVerificationFailure(IAPToolkitBaseException):
-    pass
+    def __init__(self, message: str, google_exception: DefaultCredentialsError | None):
+        self.google_exception = google_exception
+        self.message = (f"{message}, google_exception='{str(google_exception)}'")
+        super().__init__(self.message)
+
+
+class JWTInvalidData(JWTVerificationFailure):
+    def __init__(self, message: str | None = None, google_exception: DefaultCredentialsError | None = None):
+        message = message or "Invalid JWT values"
+        super().__init__(message=message, google_exception=google_exception)
+
+
+class JWTMalformed(JWTVerificationFailure):
+    def __init__(self, message: str | None = None, google_exception: DefaultCredentialsError | None = None):
+        message = message or "Malformed JWT schema"
+        super().__init__(message=message, google_exception=google_exception)
+
+
+class JWTInvalidAudience(JWTVerificationFailure):
+    def __init__(self, message: str | None = None):
+        message = message or "JWT audience mismatch"
+        super().__init__(message=message, google_exception=None)
+
+
+class JWTDisallowedUser(JWTVerificationFailure):
+    def __init__(self, message: str | None = None):
+        message = message or "User from JWT not allowed"
+        super().__init__(message=message, google_exception=None)

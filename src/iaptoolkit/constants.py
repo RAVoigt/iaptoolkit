@@ -10,3 +10,5 @@ GOOGLE_IAP_AUTH_HEADER = "Authorization"
 GOOGLE_IAP_AUTH_HEADER_PROXY = "Proxy-Authorization"
 
 GOOGLE_IAP_PUBLIC_KEY_URL = "https://www.gstatic.com/iap/verify/public_key-jwk"
+
+GOOGLE_IAP_JWT_HEADER_KEY = "x-goog-iap-jwt-assertion"

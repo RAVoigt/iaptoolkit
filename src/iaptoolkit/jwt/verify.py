@@ -52,7 +52,7 @@ class GoogleIAPKeys:
 
     @property
     def should_refresh(self) -> bool:
-        if self._retrieved_timestamp > datetime.datetime.now() - datetime.timedelta(
+        if self._retrieved_timestamp > datetime.datetime.now(tz=datetime.UTC) - datetime.timedelta(
             seconds=self._key_ttl_seconds
         ):
             return False

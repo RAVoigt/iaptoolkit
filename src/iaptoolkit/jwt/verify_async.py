@@ -24,9 +24,8 @@ class GoogleIAPKeys_Async(GoogleIAPKeys):
     _key_ttl_seconds: int = 300  # 5 mins
     _certs: dict
 
-    async def __init__(self, key_ttl_seconds: int = 300) -> None:
+    def __init__(self, key_ttl_seconds: int = 300) -> None:
         self._key_ttl_seconds = key_ttl_seconds
-        await self.refresh_async()
 
     async def refresh_async(self):
         await asyncio.to_thread(self.refresh)
@@ -40,13 +39,19 @@ class GoogleIAPKeys_Async(GoogleIAPKeys):
 
 google_public_keys_async: GoogleIAPKeys_Async | None = None
 
+async def get_google_public_keys() -> GoogleIAPKeys_Async:
+    global google_public_keys_async  # Use as singleton
+    if not google_public_keys_async:
+        google_public_keys_async = GoogleIAPKeys_Async()
+        await google_public_keys_async.refresh_async()
+    return google_public_keys_async
+
+
 
 async def verify_iap_jwt_async(iap_jwt: str, expected_audience: str|None) -> str:
     # Rudimentary async wrapper func for verify_iap_jwt using asyncio threads until google.auth.jwt_async is public
 
-    global google_public_keys_async  # Use as singleton
-    if not google_public_keys_async:
-        google_public_keys_async = GoogleIAPKeys_Async()
+    google_public_keys_async = await get_google_public_keys()
 
     try:
         decoded_jwt = await asyncio.to_thread(

@@ -1,8 +1,15 @@
+import asyncio
 import typing as t
 from functools import wraps
 
 from quart import request
+from quart.wrappers import Request
 from quart.wrappers import Response
+
+try:
+    from prometheus_client import Counter
+except ImportError:
+    pass
 
 from iaptoolkit.constants import GOOGLE_IAP_JWT_HEADER_KEY
 from iaptoolkit.exceptions import JWTDisallowedUser
@@ -11,40 +18,126 @@ from iaptoolkit.exceptions import JWTInvalidData
 from iaptoolkit.exceptions import JWTMalformed
 from iaptoolkit.utils.verify_async import verify_iap_jwt_async
 
+from .flask import JWT_Event # TODO move to constants
+from .flask import default_metric # TODO move to constants
 
-def requires_iap_jwt_async(
+
+async def _inc_metric(metric: Counter | None, event: str):
+    if not metric:
+        return
+    await asyncio.to_thread(metric.labels(event=event).inc)
+
+
+async def _verify_jwt_async(
+        request: Request,
+        jwt_header_key: str,
         jwt_audience: str,
-        allowed_users: set[str],
-        response_cls: Response = Response,
+        allowed_users: set[str] | None = None,
+        response_cls: t.Type[Response] = Response,
+        metric: Counter | None = default_metric
+    ) -> Response | None:
+
+    jwt_header: str = request.headers.get(jwt_header_key.lower(), "")
+    if not jwt_header:
+        await _inc_metric(metric, event=JWT_Event.FAIL_NO_HEADER)
+        return response_cls(f"No Google IAP JWT header in request at key: '{jwt_header_key}'", status=401)
+
+    try:
+        user_email = await verify_iap_jwt_async(iap_jwt=jwt_header, expected_audience=jwt_audience)
+        if not user_email:
+            raise JWTInvalidData("No user_email in decoded JWT")
+
+        if allowed_users and user_email not in allowed_users:
+            raise JWTDisallowedUser(message=f"User '{user_email}' from JWT not allowed for route")
+
+    except JWTInvalidAudience as ex:
+        await _inc_metric(metric, event=JWT_Event.FAIL_WRONG_AUDIENCE)
+        return response_cls(f"Forbidden: '{ex.message}'", status=403)
+
+    except JWTDisallowedUser as ex:
+        await _inc_metric(metric, event=JWT_Event.FAIL_WRONG_USER)
+        return response_cls(f"Forbidden: '{ex.message}'", status=403)
+
+    return None
+
+
+def requires_iap_jwt(
+        jwt_audience: str,
+        response_cls: t.Type[Response] = Response,
         jwt_header_key: str = GOOGLE_IAP_JWT_HEADER_KEY
     ):
     """
     A decorator that ensures the incoming request has a valid IAP JWT for a Quart route,
-    and that the user in the JWT has permission for the route
+    and that the user in the JWT has permission for the route.
+
+    Params:
+        jwt_audience: JWT Audience string (or IAP Client ID) to verify JWT against
+        response_cls: Quart response class or subclass thereof to return from decorator
+        jwt_header_key: request header key from which to retrieve the JWT (Default: 'x-goog-iap-jwt-assertion')
+        metric:
+            prometheus_client.Counter object (or None) to inc() for different outcomes.
+            Must have a single label: 'event'.
+            Set metric param to 'None' to disable metrics.
+
+    Returns:
+        Quart response of type determined by response_cls param on JWT Failure, else result of decorated view function
     """
-    def decorator(f):
+    def decorator(f: t.Callable) -> t.Callable:
 
         @wraps(f)
-        async def decorated_function(*args, **kwargs):
+        async def decorated_function(*args, **kwargs) -> Response:
+            resp: Response | None = await _verify_jwt_async(
+                request,
+                jwt_header_key=jwt_header_key,
+                jwt_audience=jwt_audience,
+                allowed_users=None,
+                response_cls=response_cls
+            )
+            if resp is not None:
+                return resp
+            return await f(*args, **kwargs)
 
-            jwt_header: str = request.headers.get(jwt_header_key.lower(), None)
-            if not jwt_header:
-                return response_cls(f"No Google IAP JWT header in request at key: '{jwt_header_key}'", status=401)
+        return decorated_function
 
-            try:
-                user_email = await verify_iap_jwt_async(iap_jwt=jwt_header, expected_audience=jwt_audience)
-                if not user_email:
-                    raise JWTInvalidData("No user_email in decoded JWT")
+    return decorator
 
-                if allowed_users and user_email not in allowed_users:
-                    raise JWTDisallowedUser(message=f"User '{user_email}' from JWT not allowed on route")
 
-            except (JWTInvalidData, JWTMalformed) as ex:
-                return response_cls(f"Forbidden: '{ex.message}'", status=401)
+def requires_iap_jwt_valid_user_async(
+        jwt_audience: str,
+        allowed_users: set[str],
+        response_cls: t.Type[Response] = Response,
+        jwt_header_key: str = GOOGLE_IAP_JWT_HEADER_KEY
+    ):
+    """
+    A decorator that ensures the incoming request has a valid IAP JWT for a Quart route,
+    and that the user in the JWT has permission for the route.
 
-            except (JWTInvalidAudience, JWTDisallowedUser) as ex:
-                return response_cls(f"Forbidden: '{ex.message}'", status=403)
+    Params:
+        jwt_audience: JWT Audience string (or IAP Client ID) to verify JWT against
+        allowed_users: set of email strings to check against user_email in JWT for permission to access decorated view func
+        response_cls: Quart response class or subclass thereof to return from decorator
+        jwt_header_key: request header key from which to retrieve the JWT (Default: 'x-goog-iap-jwt-assertion')
+        metric:
+            prometheus_client.Counter object (or None) to inc() for different outcomes.
+            Must have a single label: 'event'.
+            Set metric param to 'None' to disable metrics.
 
+    Returns:
+        Quart response of type determined by response_cls param on JWT Failure, else result of decorated view function
+    """
+    def decorator(f: t.Callable) -> t.Callable:
+
+        @wraps(f)
+        async def decorated_function(*args, **kwargs) -> Response:
+            resp: Response | None = await _verify_jwt_async(
+                request,
+                jwt_header_key=jwt_header_key,
+                jwt_audience=jwt_audience,
+                allowed_users=allowed_users,
+                response_cls=response_cls
+            )
+            if resp is not None:
+                return resp
             return await f(*args, **kwargs)
 
         return decorated_function

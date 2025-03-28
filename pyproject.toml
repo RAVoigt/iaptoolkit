@@ -45,3 +45,6 @@ pytest = "*"
 pytest-cov = "*"
 pytest-socket = "*"
 pyfakefs = "^5.3.2"
+
+flask = "*"
+quart = "*"

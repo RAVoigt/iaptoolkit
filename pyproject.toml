@@ -1,23 +1,15 @@
-[project]
+[tool.poetry]
 name = "iaptoolkit"
-version = "0.3.6"
+version = "0.3.7"
 description = "Library of common utils for interacting with Identity-Aware Proxies"
-authors = [
-    {name = "Rob Voigt", email = "code@ravoigt.com"}
-]
+authors = ["Rob Voigt <code@ravoigt.com>"]
 readme = "README.md"
-requires-python = ">=3.11"
-
-# [tool.poetry]
-# packages = [{include = "iaptoolkit"}]
+homepage = "https://github.com/RAVoigt/iaptoolkit"
+repository = "https://github.com/RAVoigt/iaptoolkit"
 
 [build-system]
-requires = ["poetry-core>=2.0"]
+requires = ["poetry-core>=1.0.0"] # Poetry 1.x style; not PEP 621
 build-backend = "poetry.core.masonry.api"
-
-[project.urls]
-Homepage = "https://github.com/RAVoigt/iaptoolkit"
-Repository = "https://github.com/RAVoigt/iaptoolkit"
 
 # ================================
 # Tools etc.
@@ -33,7 +25,7 @@ python = "^3.11"
 google-auth = "^2.29.0"
 requests = "^2.31.0"
 toml = "^0.10.2"
-kvcommon = {extras = ["k8s"], version = "^0.2.8"}
+kvcommon = {extras = ["k8s"], version = "^0.3.6"}
 
 [tool.poetry.group.dev.dependencies]
 black = "*"

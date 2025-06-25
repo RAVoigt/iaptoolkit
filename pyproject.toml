@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "iaptoolkit"
-version = "0.3.8"
+version = "0.3.9"
 description = "Library of common utils for interacting with Identity-Aware Proxies"
 authors = ["Rob Voigt <code@ravoigt.com>"]
 readme = "README.md"
@@ -23,9 +23,9 @@ include = '\.pyi?$'
 [tool.poetry.dependencies]
 python = "^3.11"
 google-auth = "^2.29.0"
-requests = "^2.31.0"
+requests = ">=2.32.4"
 toml = "^0.10.2"
-kvcommon = {extras = ["k8s"], version = "^0.4.0"}
+kvcommon = {extras = ["k8s"], version = "^0.4.1"}
 
 [tool.poetry.group.dev.dependencies]
 black = "*"

@@ -1,6 +1,7 @@
 import os
 import typing as t
 
+from google.api_core.exceptions import PermissionDenied
 from google.auth.environment_vars import CREDENTIALS as GOOGLE_CREDENTIALS_FILE_PATH
 from google.auth.exceptions import DefaultCredentialsError
 from google.auth.exceptions import RefreshError
@@ -27,7 +28,9 @@ class IAPClientIDException(IAPToolkitBaseException):
 
 
 class ServiceAccountTokenException(TokenException):
-    def __init__(self, message: str, google_exception: t.Union[DefaultCredentialsError, RefreshError] | None):
+    def __init__(
+        self, message: str, google_exception: t.Union[DefaultCredentialsError, RefreshError, PermissionDenied] | None
+    ):
         self.google_exception = google_exception
         credentials_env_var_value = os.environ.get(GOOGLE_CREDENTIALS_FILE_PATH)
         metadata_server_attempted = not credentials_env_var_value
@@ -42,7 +45,9 @@ class ServiceAccountTokenException(TokenException):
 
     @property
     def retryable(self):
-        return self.google_exception and self.google_exception._retryable
+        if not self.google_exception:
+            return False
+        return getattr(self.google_exception, "_retryable", False)
 
 
 class ServiceAccountNoDefaultCredentials(ServiceAccountTokenException):
@@ -50,6 +55,10 @@ class ServiceAccountNoDefaultCredentials(ServiceAccountTokenException):
 
 
 class ServiceAccountTokenFailedRefresh(ServiceAccountTokenException):
+    pass
+
+
+class JWTPermissionException(ServiceAccountTokenException):
     pass
 
 

@@ -36,7 +36,7 @@ class TokenDatastore(VersionedDatastore):
         tokens_dict = self.get_or_create_nested_dict(self._service_account_tokens_key)
         token_struct_dict = tokens_dict.get(iap_client_id, None)
         if not token_struct_dict:
-            LOG.debug("No stored service account token for current iap_client_id")
+            # LOG.debug("No stored service account token for current iap_client_id")
             return
         return token_struct_dict
 

@@ -47,7 +47,7 @@ class ServiceAccount(object):
                 or not token_dict.get("id_token", None)
                 or not token_dict.get("token_expiry", None)
             ):
-                LOG.debug("No stored service account token for current iap_client_id")
+                # LOG.debug("No stored service account token for current iap_client_id")
                 return
 
             id_token_from_dict: str = token_dict.get("id_token", "")
@@ -57,7 +57,7 @@ class ServiceAccount(object):
             try:
                 token_expiry = datetime.datetime.fromisoformat(token_expiry_from_dict)
             except (ValueError, TypeError) as ex:
-                LOG.debug(
+                LOG.warning(
                     "Invalid token expiry for stored token - Could not parse from ISO format to datetime."
                 )
                 return

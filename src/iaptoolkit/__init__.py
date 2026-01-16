@@ -42,7 +42,7 @@ class IAPToolkit:
                 iap_client_id=self._GOOGLE_IAP_CLIENT_ID, bypass_cached=bypass_cached,
             )
         except ServiceAccountTokenException as ex:
-            LOG.debug(ex)
+            LOG.error(ex)
             raise
 
     def get_token_oidc_str(self, bypass_cached: bool = False) -> str:

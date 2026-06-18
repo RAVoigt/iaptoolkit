@@ -20,6 +20,11 @@ class TokenStruct:
     id_token: str
     expiry: datetime.datetime
     from_cache: bool = False
+    is_jwt: bool = False
+
+    @classmethod
+    def for_jwt(cls, signed_jwt: str, expiry: datetime.datetime, from_cache: bool = False):
+        return TokenStruct(id_token=signed_jwt, is_jwt=True, from_cache=from_cache, expiry=expiry)
 
     @property
     def expired(self):
@@ -67,3 +72,4 @@ class TokenStructOAuth2(TokenStruct):
 class ResultAddTokenHeader:
     token_added: bool
     token_is_fresh: bool
+    token_is_jwt: bool

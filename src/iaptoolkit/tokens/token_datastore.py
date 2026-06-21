@@ -41,19 +41,19 @@ class TokenDatastore(VersionedDatastore):
         LOG.debug("Discarding existing tokens.")
         self.update_data(tokens={})
 
-    def get_stored_service_account_token(self, iap_client_id: str) -> TokenStruct | None:
-        token_data = self.service_account_tokens.get(iap_client_id, None)
+    def get_stored_service_account_token(self, iap_audience: str) -> TokenStruct | None:
+        token_data = self.service_account_tokens.get(iap_audience, None)
         if not token_data or not token_data.id_token or not token_data.expiry:
-            LOG.debug("No stored service account token for current iap_client_id")
+            LOG.debug("No stored service account token for current iap_audience")
             return
         return self._dict_to_tokenstruct(token_data)
 
-    def store_service_account_token(self, iap_client_id: str, id_token: str, token_expiry: datetime.datetime):
+    def store_service_account_token(self, iap_audience: str, id_token: str, token_expiry: datetime.datetime):
         if not id_token:
             raise TokenStorageException("TokenDatastore: Attempting to store invalid [empty] token")
 
         tokens_dict = self.service_account_tokens
-        self.service_account_tokens[iap_client_id] = dict(id_token=id_token, token_expiry=token_expiry.isoformat())
+        self.service_account_tokens[iap_audience] = dict(id_token=id_token, token_expiry=token_expiry.isoformat())
 
         try:
             self.update_data(service_account_tokens=tokens_dict)
@@ -121,11 +121,11 @@ class TokenDatastore(VersionedDatastore):
         self.discard_existing_tokens()
         return super()._migrate_version()
 
-    # def get_stored_oauth2_token(self, iap_client_id: str):
+    # def get_stored_oauth2_token(self, iap_audience: str):
     #     # TODO: OAuth2
     #     raise NotImplementedError()
 
-    # def store_oauth2_token(self, iap_client_id: str):
+    # def store_oauth2_token(self, iap_audience: str):
     #     # TODO: OAuth2
     #     raise NotImplementedError()
 

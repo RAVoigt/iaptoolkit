@@ -267,20 +267,20 @@ class IAPToolkit:
         """
 
         if self.is_url_safe_for_token(url=url, valid_domains=valid_domains):
-            token_is_fresh = self.get_token_and_add_to_headers_oidc(
-                request_headers=request_headers,
-                iap_audience=iap_audience,
-                use_auth_header=use_auth_header,
-                bypass_cached=bypass_cached
-            )
-            return ResultAddTokenHeader(token_added=True, token_is_fresh=token_is_fresh, token_is_jwt=False)
-        else:
             LOG.warning(
                 "URL is not approved: %s - Token will not be added to headers. Valid domains are: %s",
                 url,
                 valid_domains,
             )
             return ResultAddTokenHeader(token_added=False, token_is_fresh=False, token_is_jwt=False)
+
+        token_is_fresh = self.get_token_and_add_to_headers_oidc(
+            request_headers=request_headers,
+            iap_audience=iap_audience,
+            use_auth_header=use_auth_header,
+            bypass_cached=bypass_cached
+        )
+        return ResultAddTokenHeader(token_added=True, token_is_fresh=token_is_fresh, token_is_jwt=False)
 
     async def check_url_and_add_token_header_oidc_async(
         self,
@@ -363,22 +363,22 @@ class IAPToolkit:
             valid_domains: List of domains to validate URL against
         """
 
-        if self.is_url_safe_for_token(url=url, valid_domains=valid_domains):
-            token_is_fresh = self.get_jwt_and_add_to_headers(
-                request_headers=request_headers,
-                service_account_email=service_account_email,
-                url_audience=url_audience,
-                use_auth_header=use_auth_header,
-                bypass_cached=bypass_cached,
-            )
-            return ResultAddTokenHeader(token_added=True, token_is_fresh=token_is_fresh, token_is_jwt=True)
-        else:
+        if not self.is_url_safe_for_token(url=url, valid_domains=valid_domains):
             LOG.warning(
                 "URL is not approved: %s - Token will not be added to headers. Valid domains are: %s",
                 url,
                 valid_domains,
             )
             return ResultAddTokenHeader(token_added=False, token_is_fresh=False, token_is_jwt=True)
+
+        token_is_fresh = self.get_jwt_and_add_to_headers(
+            request_headers=request_headers,
+            service_account_email=service_account_email,
+            url_audience=url_audience,
+            use_auth_header=use_auth_header,
+            bypass_cached=bypass_cached,
+        )
+        return ResultAddTokenHeader(token_added=True, token_is_fresh=token_is_fresh, token_is_jwt=True)
 
     async def check_url_and_add_jwt_header_async(
         self,

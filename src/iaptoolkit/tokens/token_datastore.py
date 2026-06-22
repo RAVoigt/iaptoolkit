@@ -44,7 +44,7 @@ class TokenDatastore(VersionedDatastore):
     def get_stored_service_account_token(self, iap_audience: str) -> TokenStruct | None:
         token_data = self.service_account_tokens.get(iap_audience, None)
         if not token_data or not token_data.id_token or not token_data.expiry:
-            LOG.debug("No stored service account token for current iap_audience")
+            # LOG.debug("No stored service account token for current iap_audience")
             return
         return self._dict_to_tokenstruct(token_data)
 
@@ -72,7 +72,7 @@ class TokenDatastore(VersionedDatastore):
         jwts_dict_for_email = self._get_or_create_dict_for_service_account_and_url(service_account_email, url_audience)
         token_data = jwts_dict_for_email.get(url_audience, None)
         if not token_data:
-            LOG.debug("No stored service account JWT for service account '%s'", service_account_email)
+            # LOG.debug("No stored service account JWT for service account '%s'", service_account_email)
             return
         return self._dict_to_tokenstruct(token_data, is_jwt=True)
 

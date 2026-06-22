@@ -266,7 +266,7 @@ class IAPToolkit:
             use_oauth2: Passed to get_token_and_add_to_headers() to determine if OAuth2.0 is used or OIDC (default)
         """
 
-        if self.is_url_safe_for_token(url=url, valid_domains=valid_domains):
+        if not self.is_url_safe_for_token(url=url, valid_domains=valid_domains):
             LOG.warning(
                 "URL is not approved: %s - Token will not be added to headers. Valid domains are: %s",
                 url,

@@ -7,9 +7,9 @@ logging.getLogger(__name__).addHandler(logging.NullHandler())
 import asyncio
 import typing as t
 from urllib.parse import ParseResult
-from urllib.parse import urlparse
 
 from kvcommon import logger
+from kvcommon.urls import coerce_parseresult
 
 from iaptoolkit import headers
 from iaptoolkit.exceptions import ServiceAccountTokenException
@@ -113,16 +113,14 @@ class IAPToolkit:
         token_struct: TokenStruct = IAPToolkit.get_token_oidc(
             iap_audience=iap_audience, bypass_cached=bypass_cached
         )
-        id_token = token_struct.id_token
-        from_cache = token_struct.from_cache
 
         headers.add_token_to_request_headers(
             request_headers=request_headers,
-            id_token=id_token,
+            id_token=token_struct.id_token,
             use_auth_header=use_auth_header,
         )
 
-        return from_cache
+        return token_struct.from_cache
 
     @staticmethod
     async def get_token_and_add_to_headers_oidc_async(
@@ -132,33 +130,19 @@ class IAPToolkit:
         bypass_cached: bool = False,
     ) -> bool:
         """
-        Retrieves an auth token and inserts it into the supplied request_headers dict.
-        request_headers is modified in-place
-
-        Params:
-            request_headers: dict of headers to insert into
-            use_oauth2: Use OAuth2.0 credentials and respective token, else use OIDC (default)
-                As a general guideline, OIDC is the assumed default approach for ServiceAccounts.
-            use_auth_header: If true, use the 'Authorization' header instead of 'Proxy-Authorization'
-
-        Returns:
-            True if token retrieved from cache, False if fresh from API
-
+        See get_token_and_add_to_headers_oidc()
         """
 
         token_struct: TokenStruct = await IAPToolkit.get_token_oidc_async(
             iap_audience=iap_audience, bypass_cached=bypass_cached
         )
-        id_token = token_struct.id_token
-        from_cache = token_struct.from_cache
-
         headers.add_token_to_request_headers(
             request_headers=request_headers,
-            id_token=id_token,
+            id_token=token_struct.id_token,
             use_auth_header=use_auth_header,
         )
 
-        return from_cache
+        return token_struct.from_cache
 
     # @staticmethod
     # def get_token_and_add_to_headers_oauth2(
@@ -218,31 +202,32 @@ class IAPToolkit:
 
 
         """
-        from_cache = False
-
         token_struct: TokenStruct = IAPToolkit.get_service_account_jwt(
             service_account_email=service_account_email, url_audience=url_audience, bypass_cached=bypass_cached
         )
-        signed_jwt = token_struct.id_token
-        from_cache = token_struct.from_cache
-
         headers.add_token_to_request_headers(
             request_headers=request_headers,
-            id_token=signed_jwt,
+            id_token=token_struct.id_token,
             use_auth_header=use_auth_header,
         )
 
-        return from_cache
+        return token_struct.from_cache
 
     @staticmethod
     def is_url_safe_for_token(
         url: str | ParseResult,
         valid_domains: t.Optional[t.List[str] | t.Set[str] | t.Tuple[str]] = None,
+        do_log: bool = False
     ):
-        if not isinstance(url, ParseResult):
-            url = urlparse(url)
-
-        return is_url_safe_for_token(url_parts=url, allowed_domains=valid_domains)
+        url = coerce_parseresult(url)
+        is_safe = is_url_safe_for_token(url_parts=url, allowed_domains=valid_domains)
+        if do_log and not is_safe:
+            LOG.warning(
+                "URL is not approved: %s - Token will not be added to headers. Valid domains are: %s",
+                url,
+                valid_domains,
+            )
+        return is_safe
 
     def check_url_and_add_token_header_oidc(
         self,
@@ -252,6 +237,7 @@ class IAPToolkit:
         valid_domains: t.List[str] | None = None,
         use_auth_header: bool = False,
         bypass_cached: bool = False,
+        warn_if_unsafe: bool = True,
     ) -> ResultAddTokenHeader:
         """
         Checks that the supplied URL is valid (i.e.; in valid_domains) and if so, retrieves a
@@ -266,12 +252,7 @@ class IAPToolkit:
             use_oauth2: Passed to get_token_and_add_to_headers() to determine if OAuth2.0 is used or OIDC (default)
         """
 
-        if not self.is_url_safe_for_token(url=url, valid_domains=valid_domains):
-            LOG.warning(
-                "URL is not approved: %s - Token will not be added to headers. Valid domains are: %s",
-                url,
-                valid_domains,
-            )
+        if not self.is_url_safe_for_token(url=url, valid_domains=valid_domains, do_log=warn_if_unsafe):
             return ResultAddTokenHeader(token_added=False, token_is_fresh=False, token_is_jwt=False)
 
         token_is_fresh = self.get_token_and_add_to_headers_oidc(
@@ -348,6 +329,7 @@ class IAPToolkit:
         valid_domains: t.List[str] | None = None,
         use_auth_header: bool = False,
         bypass_cached: bool = False,
+        warn_if_unsafe: bool = True,
     ) -> ResultAddTokenHeader:
         """
         Checks that the supplied URL is valid (i.e.; in valid_domains) and if so, retrieves a
@@ -363,12 +345,7 @@ class IAPToolkit:
             valid_domains: List of domains to validate URL against
         """
 
-        if not self.is_url_safe_for_token(url=url, valid_domains=valid_domains):
-            LOG.warning(
-                "URL is not approved: %s - Token will not be added to headers. Valid domains are: %s",
-                url,
-                valid_domains,
-            )
+        if not self.is_url_safe_for_token(url=url, valid_domains=valid_domains, do_log=warn_if_unsafe):
             return ResultAddTokenHeader(token_added=False, token_is_fresh=False, token_is_jwt=True)
 
         token_is_fresh = self.get_jwt_and_add_to_headers(
@@ -389,6 +366,7 @@ class IAPToolkit:
         valid_domains: t.List[str] | None = None,
         use_auth_header: bool = False,
         bypass_cached: bool = False,
+        warn_if_unsafe: bool = True,
     ) -> ResultAddTokenHeader:
         return await asyncio.to_thread(
             self.check_url_and_add_jwt_header,
@@ -399,6 +377,7 @@ class IAPToolkit:
             valid_domains=valid_domains,
             use_auth_header=use_auth_header,
             bypass_cached=bypass_cached,
+            warn_if_unsafe=warn_if_unsafe
         )
 
 

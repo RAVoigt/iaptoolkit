@@ -44,10 +44,7 @@ class TokenDatastore(VersionedDatastore):
 
     @instrumented
     def get_stored_service_account_token(self, iap_audience: str) -> TokenStruct | None:
-        token_data = self.service_account_tokens.get(iap_audience, None)
-        if not token_data or not token_data.id_token or not token_data.expiry:
-            # LOG.debug("No stored service account token for current iap_audience")
-            return
+        token_data: dict | None = self.service_account_tokens.get(iap_audience, None)
         return self._dict_to_tokenstruct(token_data)
 
     @instrumented
@@ -73,11 +70,8 @@ class TokenDatastore(VersionedDatastore):
 
     @instrumented
     def get_stored_service_account_jwt(self, service_account_email: str, url_audience: str) -> TokenStruct | None:
-        jwts_dict_for_email = self._get_or_create_dict_for_service_account_and_url(service_account_email, url_audience)
-        token_data = jwts_dict_for_email.get(url_audience, None)
-        if not token_data:
-            # LOG.debug("No stored service account JWT for service account '%s'", service_account_email)
-            return
+        jwts_dict_for_email: dict = self._get_or_create_dict_for_service_account_and_url(service_account_email, url_audience)
+        token_data : dict | None = jwts_dict_for_email.get(url_audience, None)
         return self._dict_to_tokenstruct(token_data, is_jwt=True)
 
     @instrumented
@@ -95,7 +89,7 @@ class TokenDatastore(VersionedDatastore):
             LOG.error("Failed to store service account JWT for re-use. exception=%s", ex)
 
     @staticmethod
-    def _dict_to_tokenstruct(token_data: dict, is_jwt: bool = False) -> TokenStruct | None:
+    def _dict_to_tokenstruct(token_data: dict | None, is_jwt: bool = False) -> TokenStruct | None:
         if not token_data:
             return
 

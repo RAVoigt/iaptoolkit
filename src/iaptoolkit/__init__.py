@@ -30,13 +30,13 @@ class IAPToolkit:
     Class to encapsulate client-specific vars and forward them to static functions
     """
 
-    @instrumented
     @staticmethod
+    @instrumented
     def sanitize_request_headers(request_headers: dict) -> dict:
         return headers.sanitize_request_headers(request_headers)
 
-    @instrumented
     @staticmethod
+    @instrumented
     def get_service_account_jwt(
         service_account_email: str, url_audience: str, bypass_cached: bool = False
     ) -> TokenStruct:
@@ -50,8 +50,8 @@ class IAPToolkit:
             LOG.warning(ex)
             raise
 
-    @instrumented
     @staticmethod
+    @instrumented
     def get_token_oidc(iap_audience: str, bypass_cached: bool = False) -> TokenStruct:
         try:
             return ServiceAccount.get_token(
@@ -73,8 +73,8 @@ class IAPToolkit:
     #         LOG.warning(ex)
     #         raise
 
-    @instrumented
     @staticmethod
+    @instrumented
     def get_token_oidc_str(iap_audience: str, bypass_cached: bool = False) -> str:
         struct = IAPToolkit.get_token_oidc(iap_audience=iap_audience, bypass_cached=bypass_cached)
         return struct.id_token
@@ -85,20 +85,20 @@ class IAPToolkit:
     #     struct = await IAPToolkit.get_token_oidc_async(iap_audience=iap_audience, bypass_cached=bypass_cached)
     #     return struct.id_token
 
-    @instrumented
     @staticmethod
+    @instrumented
     def get_token_oauth2(bypass_cached: bool = False) -> TokenRefreshStruct:
         # TODO
         raise NotImplementedError()
 
-    @instrumented
     @staticmethod
+    @instrumented
     def get_token_oauth2_str(bypass_cached: bool = False) -> str:
         struct = IAPToolkit.get_token_oauth2(bypass_cached=bypass_cached)
         return struct.id_token
 
-    @instrumented
     @staticmethod
+    @instrumented
     def get_token_and_add_to_headers_oidc(
         request_headers: dict,
         iap_audience: str,
@@ -132,8 +132,8 @@ class IAPToolkit:
 
         return token_struct.from_cache
 
-    # @instrumented
     # @staticmethod
+    # @instrumented
     # async def get_token_and_add_to_headers_oidc_async(
     #     request_headers: dict,
     #     iap_audience: str,
@@ -189,8 +189,8 @@ class IAPToolkit:
 
     #     return from_cache
 
-    @instrumented
     @staticmethod
+    @instrumented
     def get_jwt_and_add_to_headers(
         request_headers: dict,
         service_account_email: str,
@@ -225,8 +225,8 @@ class IAPToolkit:
 
         return token_struct.from_cache
 
-    @instrumented
     @staticmethod
+    @instrumented
     def is_url_safe_for_token(
         url: str | ParseResult,
         valid_domains: t.Optional[t.List[str] | t.Set[str] | t.Tuple[str]] = None,
@@ -241,9 +241,9 @@ class IAPToolkit:
             )
         return is_safe
 
+    @staticmethod
     @instrumented
     def check_url_and_add_token_header_oidc(
-        self,
         url: str | ParseResult,
         request_headers: dict,
         iap_audience: str,
@@ -265,10 +265,10 @@ class IAPToolkit:
             use_oauth2: Passed to get_token_and_add_to_headers() to determine if OAuth2.0 is used or OIDC (default)
         """
 
-        if not self.is_url_safe_for_token(url=url, valid_domains=valid_domains, do_log=warn_if_unsafe):
+        if not IAPToolkit.is_url_safe_for_token(url=url, valid_domains=valid_domains, do_log=warn_if_unsafe):
             return ResultAddTokenHeader(token_added=False, token_is_fresh=False, token_is_jwt=False)
 
-        token_is_fresh = self.get_token_and_add_to_headers_oidc(
+        token_is_fresh = IAPToolkit.get_token_and_add_to_headers_oidc(
             request_headers=request_headers,
             iap_audience=iap_audience,
             use_auth_header=use_auth_header,
@@ -332,10 +332,9 @@ class IAPToolkit:
     #         )
     #         return ResultAddTokenHeader(token_added=False, token_is_fresh=False, token_is_jwt=False)
 
-
+    @staticmethod
     @instrumented
     def check_url_and_add_jwt_header(
-        self,
         url: str | ParseResult,
         request_headers: dict,
         service_account_email: str,
@@ -359,10 +358,10 @@ class IAPToolkit:
             valid_domains: List of domains to validate URL against
         """
 
-        if not self.is_url_safe_for_token(url=url, valid_domains=valid_domains, do_log=warn_if_unsafe):
+        if not IAPToolkit.is_url_safe_for_token(url=url, valid_domains=valid_domains, do_log=warn_if_unsafe):
             return ResultAddTokenHeader(token_added=False, token_is_fresh=False, token_is_jwt=True)
 
-        token_is_fresh = self.get_jwt_and_add_to_headers(
+        token_is_fresh = IAPToolkit.get_jwt_and_add_to_headers(
             request_headers=request_headers,
             service_account_email=service_account_email,
             url_audience=url_audience,

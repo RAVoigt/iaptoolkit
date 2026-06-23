@@ -46,16 +46,16 @@ class ServiceAccount(object):
     # ==== ==== ==== ====
     # Datastore/Cache
 
-    @instrumented
     @staticmethod
+    @instrumented
     def _store_token(iap_audience: str, id_token: str, token_expiry: datetime.datetime):
         try:
             datastore.store_service_account_token(iap_audience, id_token, token_expiry)
         except Exception as ex:  # Err on the side of not letting token-caching break requests.
             raise exceptions.TokenStorageException(f"Exception when trying to store token. exception={ex}")
 
-    @instrumented
     @staticmethod
+    @instrumented
     def _store_jwt(service_account_email: str, url_audience: str, signed_jwt: str, expiry: datetime.datetime):
         try:
             datastore.store_service_account_jwt(
@@ -67,8 +67,8 @@ class ServiceAccount(object):
         except Exception as ex:  # Err on the side of not letting token-caching break requests.
             raise exceptions.TokenStorageException(f"Exception when trying to store token. exception={ex}")
 
-    @instrumented
     @staticmethod
+    @instrumented
     def get_stored_token(iap_audience: str) -> TokenStruct | None:
         try:
             return datastore.get_stored_service_account_token(iap_audience)
@@ -77,8 +77,8 @@ class ServiceAccount(object):
             # Err on the side of not letting token-caching break requests, hence blanket except
             raise exceptions.TokenStorageException(f"Exception when trying to retrieve stored token. exception={ex}")
 
-    @instrumented
     @staticmethod
+    @instrumented
     def get_stored_jwt(service_account_email: str, url_audience: str) -> TokenStruct | None:
         try:
             return datastore.get_stored_service_account_jwt(
@@ -92,8 +92,8 @@ class ServiceAccount(object):
     # ==== ==== ==== ====
     # Credentials
 
-    @instrumented
     @staticmethod
+    @instrumented
     def _get_fresh_credentials(iap_audience: str) -> GoogleIDTokenCredentials:
 
         try:
@@ -127,8 +127,8 @@ class ServiceAccount(object):
     # ==== ==== ==== ====
     # Token
 
-    @instrumented
     @staticmethod
+    @instrumented
     def _get_token_from_google_credentials(google_credentials: GoogleIDTokenCredentials) -> str:
         id_token: str = str(google_credentials.token) # Note: This makes network calls to metadata server under the hood - NOT async safe
         if not id_token:
@@ -140,8 +140,8 @@ class ServiceAccount(object):
     #     # TODO: async-native way to get this token
     #     return await asyncio.to_thread(ServiceAccount._get_token_from_google_credentials, google_credentials)
 
-    @instrumented
     @staticmethod
+    @instrumented
     def _get_fresh_token(iap_audience: str, use_jwt: bool = False) -> TokenStruct:
         google_credentials = ServiceAccount._get_fresh_credentials(iap_audience)
         id_token: str = ServiceAccount._get_token_from_google_credentials(google_credentials)
@@ -160,8 +160,8 @@ class ServiceAccount(object):
     # ==== ==== ==== ====
     # JWT
 
-    @instrumented
     @staticmethod
+    @instrumented
     def _get_jwt(service_account_email: str, url_audience: str) -> TokenStruct:
         """
         Returns a signed JWT for the specified service account
@@ -196,8 +196,8 @@ class ServiceAccount(object):
         """
         return await asyncio.to_thread(ServiceAccount._get_jwt, service_account_email, url_audience)
 
-    @instrumented
     @staticmethod
+    @instrumented
     def get_jwt(
         service_account_email: str, url_audience: str, bypass_cached: bool = False, attempts: int = 0
     ) -> TokenStruct:
@@ -261,8 +261,8 @@ class ServiceAccount(object):
     ) -> TokenStruct:
         return await asyncio.to_thread(ServiceAccount.get_jwt, service_account_email, url_audience, bypass_cached, attempts)
 
-    @instrumented
     @staticmethod
+    @instrumented
     def get_token(iap_audience: str, bypass_cached: bool = False, _attempts: int = 0) -> TokenStruct:
         """Retrieves an OIDC token for the current environment using credentials either from
         environment variable or from metadata service.

@@ -9,6 +9,7 @@ import typing as t
 from urllib.parse import ParseResult
 
 from kvcommon import logger
+from kvcommon.tracing import auto_trace_span
 from kvcommon.urls import coerce_parseresult
 
 from iaptoolkit import headers
@@ -28,10 +29,12 @@ class IAPToolkit:
     Class to encapsulate client-specific vars and forward them to static functions
     """
 
+    @auto_trace_span
     @staticmethod
     def sanitize_request_headers(request_headers: dict) -> dict:
         return headers.sanitize_request_headers(request_headers)
 
+    @auto_trace_span
     @staticmethod
     def get_service_account_jwt(
         service_account_email: str, url_audience: str, bypass_cached: bool = False
@@ -46,6 +49,7 @@ class IAPToolkit:
             LOG.warning(ex)
             raise
 
+    @auto_trace_span
     @staticmethod
     def get_token_oidc(iap_audience: str, bypass_cached: bool = False) -> TokenStruct:
         try:
@@ -57,6 +61,7 @@ class IAPToolkit:
             LOG.warning(ex)
             raise
 
+    @auto_trace_span
     @staticmethod
     async def get_token_oidc_async(iap_audience: str, bypass_cached: bool = False) -> TokenStruct:
         try:
@@ -68,26 +73,31 @@ class IAPToolkit:
             LOG.warning(ex)
             raise
 
+    @auto_trace_span
     @staticmethod
     def get_token_oidc_str(iap_audience: str, bypass_cached: bool = False) -> str:
         struct = IAPToolkit.get_token_oidc(iap_audience=iap_audience, bypass_cached=bypass_cached)
         return struct.id_token
 
+    @auto_trace_span
     @staticmethod
     async def get_token_oidc_str_async(iap_audience: str, bypass_cached: bool = False) -> str:
         struct = await IAPToolkit.get_token_oidc_async(iap_audience=iap_audience, bypass_cached=bypass_cached)
         return struct.id_token
 
+    @auto_trace_span
     @staticmethod
     def get_token_oauth2(bypass_cached: bool = False) -> TokenRefreshStruct:
         # TODO
         raise NotImplementedError()
 
+    @auto_trace_span
     @staticmethod
     def get_token_oauth2_str(bypass_cached: bool = False) -> str:
         struct = IAPToolkit.get_token_oauth2(bypass_cached=bypass_cached)
         return struct.id_token
 
+    @auto_trace_span
     @staticmethod
     def get_token_and_add_to_headers_oidc(
         request_headers: dict,
@@ -122,6 +132,7 @@ class IAPToolkit:
 
         return token_struct.from_cache
 
+    @auto_trace_span
     @staticmethod
     async def get_token_and_add_to_headers_oidc_async(
         request_headers: dict,
@@ -178,6 +189,7 @@ class IAPToolkit:
 
     #     return from_cache
 
+    @auto_trace_span
     @staticmethod
     def get_jwt_and_add_to_headers(
         request_headers: dict,
@@ -213,6 +225,7 @@ class IAPToolkit:
 
         return token_struct.from_cache
 
+    @auto_trace_span
     @staticmethod
     def is_url_safe_for_token(
         url: str | ParseResult,
@@ -229,6 +242,7 @@ class IAPToolkit:
             )
         return is_safe
 
+    @auto_trace_span
     def check_url_and_add_token_header_oidc(
         self,
         url: str | ParseResult,
@@ -320,6 +334,7 @@ class IAPToolkit:
     #         return ResultAddTokenHeader(token_added=False, token_is_fresh=False, token_is_jwt=False)
 
 
+    @auto_trace_span
     def check_url_and_add_jwt_header(
         self,
         url: str | ParseResult,

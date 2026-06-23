@@ -4,8 +4,8 @@ import typing as t
 from kvcommon import logger
 from kvcommon.datastore.backend import DatastoreBackend
 from kvcommon.datastore.backend import DictBackend
-
 from kvcommon.datastore import VersionedDatastore
+from kvcommon.tracing import auto_trace_span
 
 from iaptoolkit.exceptions import TokenStorageException
 from iaptoolkit.constants import IAPTOOLKIT_CONFIG_VERSION
@@ -13,7 +13,9 @@ from iaptoolkit.constants import IAPTOOLKIT_CONFIG_VERSION
 from .structs import TokenStruct
 
 
+
 LOG = logger.get_logger("iaptk-ds")
+
 
 
 class TokenDatastore(VersionedDatastore):
@@ -41,6 +43,7 @@ class TokenDatastore(VersionedDatastore):
         LOG.debug("Discarding existing tokens.")
         self.update_data(tokens={})
 
+    @auto_trace_span
     def get_stored_service_account_token(self, iap_audience: str) -> TokenStruct | None:
         token_data = self.service_account_tokens.get(iap_audience, None)
         if not token_data or not token_data.id_token or not token_data.expiry:
@@ -48,6 +51,7 @@ class TokenDatastore(VersionedDatastore):
             return
         return self._dict_to_tokenstruct(token_data)
 
+    @auto_trace_span
     def store_service_account_token(self, iap_audience: str, id_token: str, token_expiry: datetime.datetime):
         if not id_token:
             raise TokenStorageException("TokenDatastore: Attempting to store invalid [empty] token")
@@ -68,6 +72,7 @@ class TokenDatastore(VersionedDatastore):
         token_dict = jwts_dict_for_email.get(url_audience, dict())
         return token_dict
 
+    @auto_trace_span
     def get_stored_service_account_jwt(self, service_account_email: str, url_audience: str) -> TokenStruct | None:
         jwts_dict_for_email = self._get_or_create_dict_for_service_account_and_url(service_account_email, url_audience)
         token_data = jwts_dict_for_email.get(url_audience, None)
@@ -76,6 +81,7 @@ class TokenDatastore(VersionedDatastore):
             return
         return self._dict_to_tokenstruct(token_data, is_jwt=True)
 
+    @auto_trace_span
     def store_service_account_jwt(
         self, service_account_email: str, url_audience: str, signed_jwt: str, expiry: datetime.datetime
     ):

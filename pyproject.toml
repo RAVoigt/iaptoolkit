@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "iaptoolkit"
-version = "0.5.0a3"
+version = "0.5.0a4"
 description = "Library of common utils for interacting with Identity-Aware Proxies"
 authors = ["Rob Voigt <code@ravoigt.com>"]
 readme = "README.md"
@@ -26,7 +26,7 @@ httpx = "^0.28.1"
 requests = "^2.34.2"
 toml = "^0.10.2"
 
-kvcommon = {version = "^0.4.9"}
+kvcommon = {extras = ["opentelemetry"], version = "^0.4.13"}
 
 google-auth = "^2.55.0"
 google-cloud-iam = "^2.23.0"

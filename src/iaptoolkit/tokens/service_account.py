@@ -13,6 +13,7 @@ from google.cloud import iam_credentials_v1
 from google.oauth2 import id_token as google_id_token_lib
 
 from kvcommon import logger
+from kvcommon.tracing import auto_trace_span
 
 from iaptoolkit import exceptions
 from iaptoolkit.tokens.token_datastore import datastore
@@ -46,6 +47,7 @@ class ServiceAccount(object):
     # ==== ==== ==== ====
     # Datastore/Cache
 
+    @auto_trace_span
     @staticmethod
     def _store_token(iap_audience: str, id_token: str, token_expiry: datetime.datetime):
         try:
@@ -53,6 +55,7 @@ class ServiceAccount(object):
         except Exception as ex:  # Err on the side of not letting token-caching break requests.
             raise exceptions.TokenStorageException(f"Exception when trying to store token. exception={ex}")
 
+    @auto_trace_span
     @staticmethod
     def _store_jwt(service_account_email: str, url_audience: str, signed_jwt: str, expiry: datetime.datetime):
         try:
@@ -65,6 +68,7 @@ class ServiceAccount(object):
         except Exception as ex:  # Err on the side of not letting token-caching break requests.
             raise exceptions.TokenStorageException(f"Exception when trying to store token. exception={ex}")
 
+    @auto_trace_span
     @staticmethod
     def get_stored_token(iap_audience: str) -> TokenStruct | None:
         try:
@@ -74,6 +78,7 @@ class ServiceAccount(object):
             # Err on the side of not letting token-caching break requests, hence blanket except
             raise exceptions.TokenStorageException(f"Exception when trying to retrieve stored token. exception={ex}")
 
+    @auto_trace_span
     @staticmethod
     def get_stored_jwt(service_account_email: str, url_audience: str) -> TokenStruct | None:
         try:
@@ -88,6 +93,7 @@ class ServiceAccount(object):
     # ==== ==== ==== ====
     # Credentials
 
+    @auto_trace_span
     @staticmethod
     def _get_fresh_credentials(iap_audience: str) -> GoogleIDTokenCredentials:
 
@@ -113,15 +119,16 @@ class ServiceAccount(object):
             )
         return credentials
 
-    @staticmethod
-    async def _get_fresh_credentials_async(iap_audience: str) -> GoogleIDTokenCredentials:
-        # TODO: async-native way to get these credentials
-        return await asyncio.to_thread(ServiceAccount._get_fresh_credentials, iap_audience)
+    # @staticmethod
+    # async def _get_fresh_credentials_async(iap_audience: str) -> GoogleIDTokenCredentials:
+    #     # TODO: async-native way to get these credentials
+    #     return await asyncio.to_thread(ServiceAccount._get_fresh_credentials, iap_audience)
 
 
     # ==== ==== ==== ====
     # Token
 
+    @auto_trace_span
     @staticmethod
     def _get_token_from_google_credentials(google_credentials: GoogleIDTokenCredentials) -> str:
         id_token: str = str(google_credentials.token) # Note: This makes network calls to metadata server under the hood - NOT async safe
@@ -129,11 +136,12 @@ class ServiceAccount(object):
             raise exceptions.TokenException("Invalid [empty] token retrieved for Service Account.")
         return id_token
 
-    @staticmethod
-    async def _get_token_from_google_credentials_async(google_credentials: GoogleIDTokenCredentials) -> str:
-        # TODO: async-native way to get this token
-        return await asyncio.to_thread(ServiceAccount._get_token_from_google_credentials, google_credentials)
+    # @staticmethod
+    # async def _get_token_from_google_credentials_async(google_credentials: GoogleIDTokenCredentials) -> str:
+    #     # TODO: async-native way to get this token
+    #     return await asyncio.to_thread(ServiceAccount._get_token_from_google_credentials, google_credentials)
 
+    @auto_trace_span
     @staticmethod
     def _get_fresh_token(iap_audience: str, use_jwt: bool = False) -> TokenStruct:
         google_credentials = ServiceAccount._get_fresh_credentials(iap_audience)
@@ -142,17 +150,18 @@ class ServiceAccount(object):
         token_expiry = _fix_token_tz(google_credentials.expiry)
         return TokenStruct(id_token=id_token, expiry=token_expiry, from_cache=False)
 
-    @staticmethod
-    async def _get_fresh_token_async(iap_audience: str, use_jwt: bool = False) -> TokenStruct:
-        google_credentials = await ServiceAccount._get_fresh_credentials_async(iap_audience)
-        id_token: str = await ServiceAccount._get_token_from_google_credentials_async(google_credentials)
+    # @staticmethod
+    # async def _get_fresh_token_async(iap_audience: str, use_jwt: bool = False) -> TokenStruct:
+    #     google_credentials = await ServiceAccount._get_fresh_credentials_async(iap_audience)
+    #     id_token: str = await ServiceAccount._get_token_from_google_credentials_async(google_credentials)
 
-        token_expiry = _fix_token_tz(google_credentials.expiry)
-        return TokenStruct(id_token=id_token, expiry=token_expiry, from_cache=False)
+    #     token_expiry = _fix_token_tz(google_credentials.expiry)
+    #     return TokenStruct(id_token=id_token, expiry=token_expiry, from_cache=False)
 
     # ==== ==== ==== ====
     # JWT
 
+    @auto_trace_span
     @staticmethod
     def _get_jwt(service_account_email: str, url_audience: str) -> TokenStruct:
         """
@@ -188,6 +197,7 @@ class ServiceAccount(object):
         """
         return await asyncio.to_thread(ServiceAccount._get_jwt, service_account_email, url_audience)
 
+    @auto_trace_span
     @staticmethod
     def get_jwt(
         service_account_email: str, url_audience: str, bypass_cached: bool = False, attempts: int = 0
@@ -252,10 +262,11 @@ class ServiceAccount(object):
     ) -> TokenStruct:
         return await asyncio.to_thread(ServiceAccount.get_jwt, service_account_email, url_audience, bypass_cached, attempts)
 
+    @auto_trace_span
     @staticmethod
     def get_token(iap_audience: str, bypass_cached: bool = False, _attempts: int = 0) -> TokenStruct:
-        """Retrieves an OIDC token for the current environment either from environment variable or from
-        metadata service.
+        """Retrieves an OIDC token for the current environment using credentials either from
+        environment variable or from metadata service.
 
         1. If the environment variable ``GOOGLE_APPLICATION_CREDENTIALS`` is set
         to the path of a valid service account JSON file, then ID token is
@@ -303,39 +314,39 @@ class ServiceAccount(object):
             # Try again without involving the cache
             return ServiceAccount.get_token(iap_audience, bypass_cached=True, _attempts=_attempts)
 
-    @staticmethod
-    async def get_token_async(iap_audience: str, bypass_cached: bool = False, _attempts: int = 0) -> TokenStruct:
-        """
-        See get_token()
-        """
+    # @staticmethod
+    # async def get_token_async(iap_audience: str, bypass_cached: bool = False, _attempts: int = 0) -> TokenStruct:
+    #     """
+    #     See get_token()
+    #     """
 
-        use_cache = not bypass_cached
+    #     use_cache = not bypass_cached
 
-        try:
-            token_struct: TokenStruct | None = None
+    #     try:
+    #         token_struct: TokenStruct | None = None
 
-            if use_cache:
-                token_struct = ServiceAccount.get_stored_token(iap_audience)
+    #         if use_cache:
+    #             token_struct = ServiceAccount.get_stored_token(iap_audience)
 
-            if not token_struct:
-                token_struct = await ServiceAccount._get_fresh_token_async(iap_audience)
-                if use_cache:
-                    ServiceAccount._store_token(iap_audience, token_struct.id_token, token_struct.expiry)
+    #         if not token_struct:
+    #             token_struct = await ServiceAccount._get_fresh_token_async(iap_audience)
+    #             if use_cache:
+    #                 ServiceAccount._store_token(iap_audience, token_struct.id_token, token_struct.expiry)
 
-            return token_struct
+    #         return token_struct
 
-        except exceptions.ServiceAccountTokenException as ex:
-            _attempts += 1
-            if _attempts > MAX_RECURSE or not ex.retryable:
-                raise
-            return await ServiceAccount.get_token_async(iap_audience, bypass_cached=False, _attempts=_attempts)
+    #     except exceptions.ServiceAccountTokenException as ex:
+    #         _attempts += 1
+    #         if _attempts > MAX_RECURSE or not ex.retryable:
+    #             raise
+    #         return await ServiceAccount.get_token_async(iap_audience, bypass_cached=False, _attempts=_attempts)
 
-        except exceptions.TokenStorageException as ex:
-            if _attempts > 1:
-                raise
-            _attempts += 1
-            # Try again without involving the cache
-            return await ServiceAccount.get_token_async(iap_audience, bypass_cached=True, _attempts=_attempts)
+    #     except exceptions.TokenStorageException as ex:
+    #         if _attempts > 1:
+    #             raise
+    #         _attempts += 1
+    #         # Try again without involving the cache
+    #         return await ServiceAccount.get_token_async(iap_audience, bypass_cached=True, _attempts=_attempts)
 
 
 class GoogleServiceAccount(ServiceAccount):
@@ -353,9 +364,11 @@ class GoogleServiceAccount(ServiceAccount):
         self._service_account_email = service_account_email
         super().__init__()
 
+    @auto_trace_span
     def get_stored_jwt(self, url_audience: str) -> t.Optional[TokenStruct]:
         return ServiceAccount.get_stored_jwt(self._service_account_email, url_audience=url_audience)
 
+    @auto_trace_span
     def get_jwt(self, url_audience: str, bypass_cached: bool = False, attempts: int = 0) -> TokenStruct:
         return ServiceAccount.get_jwt(
             service_account_email=self._service_account_email,
@@ -364,10 +377,10 @@ class GoogleServiceAccount(ServiceAccount):
             attempts=attempts,
         )
 
-    async def get_jwt_async(self, url_audience: str, bypass_cached: bool = False, attempts: int = 0) -> TokenStruct:
-        return await ServiceAccount.get_jwt_async(
-            service_account_email=self._service_account_email,
-            url_audience=url_audience,
-            bypass_cached=bypass_cached,
-            attempts=attempts,
-        )
+    # async def get_jwt_async(self, url_audience: str, bypass_cached: bool = False, attempts: int = 0) -> TokenStruct:
+    #     return await ServiceAccount.get_jwt_async(
+    #         service_account_email=self._service_account_email,
+    #         url_audience=url_audience,
+    #         bypass_cached=bypass_cached,
+    #         attempts=attempts,
+    #     )

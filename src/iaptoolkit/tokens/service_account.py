@@ -142,20 +142,24 @@ class ServiceAccount(object):
 
     @staticmethod
     @instrumented
-    def _get_fresh_token(iap_audience: str, use_jwt: bool = False) -> TokenStruct:
+    def _get_fresh_token(iap_audience: str) -> TokenStruct:
         google_credentials = ServiceAccount._get_fresh_credentials(iap_audience)
         id_token: str = ServiceAccount._get_token_from_google_credentials(google_credentials)
 
         token_expiry = _fix_token_tz(google_credentials.expiry)
         return TokenStruct(id_token=id_token, expiry=token_expiry, from_cache=False)
 
-    # @staticmethod
-    # async def _get_fresh_token_async(iap_audience: str, use_jwt: bool = False) -> TokenStruct:
-    #     google_credentials = await ServiceAccount._get_fresh_credentials_async(iap_audience)
-    #     id_token: str = await ServiceAccount._get_token_from_google_credentials_async(google_credentials)
+    def get_fresh_token(self, iap_audience: str, cache_token: bool = True) -> TokenStruct:
+        token_struct = ServiceAccount._get_fresh_token(iap_audience)
+        if cache_token:
+            ServiceAccount._store_token(iap_audience, token_struct.id_token, token_struct.expiry)
+        return token_struct
 
-    #     token_expiry = _fix_token_tz(google_credentials.expiry)
-    #     return TokenStruct(id_token=id_token, expiry=token_expiry, from_cache=False)
+    async def get_fresh_token_async(self, iap_audience: str, cache_token: bool = True) -> TokenStruct:
+        token_struct = await asyncio.to_thread(ServiceAccount._get_fresh_token, iap_audience)
+        if cache_token:
+            ServiceAccount._store_token(iap_audience, token_struct.id_token, token_struct.expiry)
+        return token_struct
 
     # ==== ==== ==== ====
     # JWT
@@ -312,6 +316,7 @@ class ServiceAccount(object):
             _attempts += 1
             # Try again without involving the cache
             return ServiceAccount.get_token(iap_audience, bypass_cached=True, _attempts=_attempts)
+
 
     # @staticmethod
     # async def get_token_async(iap_audience: str, bypass_cached: bool = False, _attempts: int = 0) -> TokenStruct:

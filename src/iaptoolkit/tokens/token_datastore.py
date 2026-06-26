@@ -5,7 +5,9 @@ from kvcommon import logger
 from kvcommon.datastore.backend import DatastoreBackend
 from kvcommon.datastore.backend import DictBackend
 from kvcommon.datastore import VersionedDatastore
+
 from otel_extensions import instrumented
+
 from iaptoolkit.exceptions import TokenStorageException
 from iaptoolkit.constants import IAPTOOLKIT_CONFIG_VERSION
 

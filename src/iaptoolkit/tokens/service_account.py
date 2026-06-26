@@ -138,13 +138,17 @@ class ServiceAccount(object):
         token_expiry = _fix_token_tz(google_credentials.expiry)
         return TokenStruct(id_token=id_token, expiry=token_expiry, from_cache=False)
 
-    def get_fresh_token(self, iap_audience: str, cache_token: bool = True) -> TokenStruct:
+    @staticmethod
+    @instrumented
+    def get_fresh_token(iap_audience: str, cache_token: bool = True) -> TokenStruct:
         token_struct = ServiceAccount._get_fresh_token(iap_audience)
         if cache_token:
             ServiceAccount._store_token(iap_audience, token_struct.id_token, token_struct.expiry)
         return token_struct
 
-    async def get_fresh_token_async(self, iap_audience: str, cache_token: bool = True) -> TokenStruct:
+    @staticmethod
+    @instrumented
+    async def get_fresh_token_async(iap_audience: str, cache_token: bool = True) -> TokenStruct:
         token_struct = await asyncio.to_thread(ServiceAccount._get_fresh_token, iap_audience)
         if cache_token:
             ServiceAccount._store_token(iap_audience, token_struct.id_token, token_struct.expiry)

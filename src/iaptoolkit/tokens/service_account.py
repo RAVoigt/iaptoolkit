@@ -118,12 +118,6 @@ class ServiceAccount(object):
             )
         return credentials
 
-    # @staticmethod
-    # async def _get_fresh_credentials_async(iap_audience: str) -> GoogleIDTokenCredentials:
-    #     # TODO: async-native way to get these credentials
-    #     return await asyncio.to_thread(ServiceAccount._get_fresh_credentials, iap_audience)
-
-
     # ==== ==== ==== ====
     # Token
 
@@ -134,11 +128,6 @@ class ServiceAccount(object):
         if not id_token:
             raise exceptions.TokenException("Invalid [empty] token retrieved for Service Account.")
         return id_token
-
-    # @staticmethod
-    # async def _get_token_from_google_credentials_async(google_credentials: GoogleIDTokenCredentials) -> str:
-    #     # TODO: async-native way to get this token
-    #     return await asyncio.to_thread(ServiceAccount._get_token_from_google_credentials, google_credentials)
 
     @staticmethod
     @instrumented
@@ -318,41 +307,6 @@ class ServiceAccount(object):
             return ServiceAccount.get_token(iap_audience, bypass_cached=True, _attempts=_attempts)
 
 
-    # @staticmethod
-    # async def get_token_async(iap_audience: str, bypass_cached: bool = False, _attempts: int = 0) -> TokenStruct:
-    #     """
-    #     See get_token()
-    #     """
-
-    #     use_cache = not bypass_cached
-
-    #     try:
-    #         token_struct: TokenStruct | None = None
-
-    #         if use_cache:
-    #             token_struct = ServiceAccount.get_stored_token(iap_audience)
-
-    #         if not token_struct:
-    #             token_struct = await ServiceAccount._get_fresh_token_async(iap_audience)
-    #             if use_cache:
-    #                 ServiceAccount._store_token(iap_audience, token_struct.id_token, token_struct.expiry)
-
-    #         return token_struct
-
-    #     except exceptions.ServiceAccountTokenException as ex:
-    #         _attempts += 1
-    #         if _attempts > MAX_RECURSE or not ex.retryable:
-    #             raise
-    #         return await ServiceAccount.get_token_async(iap_audience, bypass_cached=False, _attempts=_attempts)
-
-    #     except exceptions.TokenStorageException as ex:
-    #         if _attempts > 1:
-    #             raise
-    #         _attempts += 1
-    #         # Try again without involving the cache
-    #         return await ServiceAccount.get_token_async(iap_audience, bypass_cached=True, _attempts=_attempts)
-
-
 class GoogleServiceAccount(ServiceAccount):
     """
     For interacting with Google service accounts, Service Account JWTs and OIDC tokens for Google IAP
@@ -380,11 +334,3 @@ class GoogleServiceAccount(ServiceAccount):
             bypass_cached=bypass_cached,
             attempts=attempts,
         )
-
-    # async def get_jwt_async(self, url_audience: str, bypass_cached: bool = False, attempts: int = 0) -> TokenStruct:
-    #     return await ServiceAccount.get_jwt_async(
-    #         service_account_email=self._service_account_email,
-    #         url_audience=url_audience,
-    #         bypass_cached=bypass_cached,
-    #         attempts=attempts,
-    #     )

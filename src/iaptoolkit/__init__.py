@@ -62,28 +62,11 @@ class IAPToolkit:
             LOG.warning(ex)
             raise
 
-    # @staticmethod
-    # async def get_token_oidc_async(iap_audience: str, bypass_cached: bool = False) -> TokenStruct:
-    #     try:
-    #         return await ServiceAccount.get_token_async(
-    #             iap_audience=iap_audience,
-    #             bypass_cached=bypass_cached,
-    #         )
-    #     except ServiceAccountTokenException as ex:
-    #         LOG.warning(ex)
-    #         raise
-
     @staticmethod
     @instrumented
     def get_token_oidc_str(iap_audience: str, bypass_cached: bool = False) -> str:
         struct = IAPToolkit.get_token_oidc(iap_audience=iap_audience, bypass_cached=bypass_cached)
         return struct.id_token
-
-    # @instrumented
-    # @staticmethod
-    # async def get_token_oidc_str_async(iap_audience: str, bypass_cached: bool = False) -> str:
-    #     struct = await IAPToolkit.get_token_oidc_async(iap_audience=iap_audience, bypass_cached=bypass_cached)
-    #     return struct.id_token
 
     @staticmethod
     @instrumented
@@ -132,62 +115,6 @@ class IAPToolkit:
 
         return token_struct.from_cache
 
-    # @staticmethod
-    # @instrumented
-    # async def get_token_and_add_to_headers_oidc_async(
-    #     request_headers: dict,
-    #     iap_audience: str,
-    #     use_auth_header: bool = False,
-    #     bypass_cached: bool = False,
-    # ) -> bool:
-    #     """
-    #     See get_token_and_add_to_headers_oidc()
-    #     """
-
-    #     token_struct: TokenStruct = await IAPToolkit.get_token_oidc_async(
-    #         iap_audience=iap_audience, bypass_cached=bypass_cached
-    #     )
-    #     headers.add_token_to_request_headers(
-    #         request_headers=request_headers,
-    #         id_token=token_struct.id_token,
-    #         use_auth_header=use_auth_header,
-    #     )
-
-    #     return token_struct.from_cache
-
-    # @staticmethod
-    # def get_token_and_add_to_headers_oauth2(
-    #     request_headers: dict,
-    #     use_auth_header: bool = False,
-    #     bypass_cached: bool = False,
-    # ) -> bool:
-    #     """
-    #     Retrieves an auth token and inserts it into the supplied request_headers dict.
-    #     request_headers is modified in-place
-
-    #     Params:
-    #         request_headers: dict of headers to insert into
-    #         use_oauth2: Use OAuth2.0 credentials and respective token, else use OIDC (default)
-    #             As a general guideline, OIDC is the assumed default approach for ServiceAccounts.
-    #         use_auth_header: If true, use the 'Authorization' header instead of 'Proxy-Authorization'
-
-    #     Returns:
-    #         True if token retrieved from cache, False if fresh from API
-
-
-    #     """
-
-    #     token_refresh_struct: TokenRefreshStruct = IAPToolkit.get_token_oauth2(bypass_cached=bypass_cached)
-    #     id_token = token_refresh_struct.id_token
-    #     from_cache = token_refresh_struct.from_cache
-
-    #     headers.add_token_to_request_headers(
-    #         request_headers=request_headers,
-    #         id_token=id_token,
-    #         use_auth_header=use_auth_header,
-    #     )
-
-    #     return from_cache
 
     @staticmethod
     @instrumented
@@ -276,61 +203,6 @@ class IAPToolkit:
         )
         return ResultAddTokenHeader(token_added=True, token_is_fresh=token_is_fresh, token_is_jwt=False)
 
-    # async def check_url_and_add_token_header_oidc_async(
-    #     self,
-    #     url: str | ParseResult,
-    #     request_headers: dict,
-    #     iap_audience: str,
-    #     valid_domains: t.List[str] | None = None,
-    #     use_auth_header: bool = False,
-    #     bypass_cached: bool = False,
-    # ) -> ResultAddTokenHeader:
-    #     return await asyncio.to_thread(
-    #         self.check_url_and_add_token_header_oidc,
-    #         url=url,
-    #         request_headers=request_headers,
-    #         iap_audience=iap_audience,
-    #         valid_domains=valid_domains,
-    #         use_auth_header=use_auth_header,
-    #         bypass_cached=bypass_cached,
-    #     )
-
-    # def check_url_and_add_token_header_oauth2(
-    #     self,
-    #     url: str | ParseResult,
-    #     request_headers: dict,
-    #     iap_audience: str,
-    #     valid_domains: t.List[str] | None = None,
-    #     use_auth_header: bool = False,
-    #     bypass_cached: bool = False,
-    # ) -> ResultAddTokenHeader:
-    #     """
-    #     Checks that the supplied URL is valid (i.e.; in valid_domains) and if so, retrieves a
-    #     token and adds it to request_headers.
-
-    #     i.e.; A convenience wrapper with logging for is_url_safe_for_token() and get_token_and_add_to_headers()
-
-    #     Params:
-    #         url: URL string or urllib.ParseResult to check for validity
-    #         request_headers: Dict of headers to insert into
-    #         valid_domains: List of domains to validate URL against
-    #         use_oauth2: Passed to get_token_and_add_to_headers() to determine if OAuth2.0 is used or OIDC (default)
-    #     """
-
-    #     if self.is_url_safe_for_token(url=url, valid_domains=valid_domains):
-    #         token_is_fresh = self.get_token_and_add_to_headers_oauth2(
-    #             request_headers=request_headers,
-    #             use_auth_header=use_auth_header,
-    #             bypass_cached=bypass_cached
-    #         )
-    #         return ResultAddTokenHeader(token_added=True, token_is_fresh=token_is_fresh, token_is_jwt=False)
-    #     else:
-    #         LOG.warning(
-    #             "URL is not approved: %s - Token will not be added to headers. Valid domains are: %s",
-    #             url,
-    #             valid_domains,
-    #         )
-    #         return ResultAddTokenHeader(token_added=False, token_is_fresh=False, token_is_jwt=False)
 
     @staticmethod
     @instrumented
@@ -370,29 +242,6 @@ class IAPToolkit:
         )
         return ResultAddTokenHeader(token_added=True, token_is_fresh=token_is_fresh, token_is_jwt=True)
 
-    # async def check_url_and_add_jwt_header_async(
-    #     self,
-    #     url: str | ParseResult,
-    #     request_headers: dict,
-    #     service_account_email: str,
-    #     url_audience: str,
-    #     valid_domains: t.List[str] | None = None,
-    #     use_auth_header: bool = False,
-    #     bypass_cached: bool = False,
-    #     warn_if_unsafe: bool = True,
-    # ) -> ResultAddTokenHeader:
-    #     return await asyncio.to_thread(
-    #         self.check_url_and_add_jwt_header,
-    #         url=url,
-    #         request_headers=request_headers,
-    #         service_account_email=service_account_email,
-    #         url_audience=url_audience,
-    #         valid_domains=valid_domains,
-    #         use_auth_header=use_auth_header,
-    #         bypass_cached=bypass_cached,
-    #         warn_if_unsafe=warn_if_unsafe
-    #     )
-
 
 class IAPToolkit_OIDC(IAPToolkit):
     """
@@ -423,19 +272,6 @@ class IAPToolkit_OIDC(IAPToolkit):
             bypass_cached=bypass_cached,
         )
 
-    # async def get_token_and_add_to_headers_async(
-    #     self,
-    #     request_headers: dict,
-    #     use_auth_header: bool = False,
-    #     bypass_cached: bool = False,
-    # ) -> bool:
-    #     return await super().get_token_and_add_to_headers_oidc_async(
-    #         iap_audience=self.iap_audience,
-    #         request_headers=request_headers,
-    #         use_auth_header=use_auth_header,
-    #         bypass_cached=bypass_cached,
-    #     )
-
     def check_url_and_add_token_header(
         self,
         url: str | ParseResult,
@@ -453,22 +289,6 @@ class IAPToolkit_OIDC(IAPToolkit):
             bypass_cached=bypass_cached,
         )
 
-    # async def check_url_and_add_token_header_async(
-    #     self,
-    #     url: str | ParseResult,
-    #     request_headers: dict,
-    #     valid_domains: t.List[str] | None = None,
-    #     use_auth_header: bool = False,
-    #     bypass_cached: bool = False,
-    # ) -> ResultAddTokenHeader:
-    #     return await super().check_url_and_add_token_header_oidc_async(
-    #         url,
-    #         request_headers=request_headers,
-    #         iap_audience=self.iap_audience,
-    #         valid_domains=valid_domains,
-    #         use_auth_header=use_auth_header,
-    #         bypass_cached=bypass_cached,
-    #     )
 
 
 # class IAPToolkit_OAuth2(IAPToolkit):

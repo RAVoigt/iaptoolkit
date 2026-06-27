@@ -4,8 +4,9 @@ import typing as t
 from kvcommon import logger
 from kvcommon.datastore.backend import DatastoreBackend
 from kvcommon.datastore.backend import DictBackend
-
 from kvcommon.datastore import VersionedDatastore
+
+from otel_extensions import instrumented
 
 from iaptoolkit.exceptions import TokenStorageException
 from iaptoolkit.constants import IAPTOOLKIT_CONFIG_VERSION
@@ -13,7 +14,9 @@ from iaptoolkit.constants import IAPTOOLKIT_CONFIG_VERSION
 from .structs import TokenStruct
 
 
+
 LOG = logger.get_logger("iaptk-ds")
+
 
 
 class TokenDatastore(VersionedDatastore):
@@ -41,19 +44,18 @@ class TokenDatastore(VersionedDatastore):
         LOG.debug("Discarding existing tokens.")
         self.update_data(tokens={})
 
-    def get_stored_service_account_token(self, iap_client_id: str) -> TokenStruct | None:
-        token_data = self.service_account_tokens.get(iap_client_id, None)
-        if not token_data or not token_data.id_token or not token_data.expiry:
-            LOG.debug("No stored service account token for current iap_client_id")
-            return
+    @instrumented
+    def get_stored_service_account_token(self, iap_audience: str) -> TokenStruct | None:
+        token_data: dict | None = self.service_account_tokens.get(iap_audience, None)
         return self._dict_to_tokenstruct(token_data)
 
-    def store_service_account_token(self, iap_client_id: str, id_token: str, token_expiry: datetime.datetime):
+    @instrumented
+    def store_service_account_token(self, iap_audience: str, id_token: str, token_expiry: datetime.datetime):
         if not id_token:
             raise TokenStorageException("TokenDatastore: Attempting to store invalid [empty] token")
 
         tokens_dict = self.service_account_tokens
-        self.service_account_tokens[iap_client_id] = dict(id_token=id_token, token_expiry=token_expiry.isoformat())
+        self.service_account_tokens[iap_audience] = dict(id_token=id_token, token_expiry=token_expiry.isoformat())
 
         try:
             self.update_data(service_account_tokens=tokens_dict)
@@ -68,14 +70,13 @@ class TokenDatastore(VersionedDatastore):
         token_dict = jwts_dict_for_email.get(url_audience, dict())
         return token_dict
 
+    @instrumented
     def get_stored_service_account_jwt(self, service_account_email: str, url_audience: str) -> TokenStruct | None:
-        jwts_dict_for_email = self._get_or_create_dict_for_service_account_and_url(service_account_email, url_audience)
-        token_data = jwts_dict_for_email.get(url_audience, None)
-        if not token_data:
-            LOG.debug("No stored service account JWT for service account '%s'", service_account_email)
-            return
+        jwts_dict_for_email: dict = self._get_or_create_dict_for_service_account_and_url(service_account_email, url_audience)
+        token_data : dict | None = jwts_dict_for_email.get(url_audience, None)
         return self._dict_to_tokenstruct(token_data, is_jwt=True)
 
+    @instrumented
     def store_service_account_jwt(
         self, service_account_email: str, url_audience: str, signed_jwt: str, expiry: datetime.datetime
     ):
@@ -90,7 +91,7 @@ class TokenDatastore(VersionedDatastore):
             LOG.error("Failed to store service account JWT for re-use. exception=%s", ex)
 
     @staticmethod
-    def _dict_to_tokenstruct(token_data: dict, is_jwt: bool = False) -> TokenStruct | None:
+    def _dict_to_tokenstruct(token_data: dict | None, is_jwt: bool = False) -> TokenStruct | None:
         if not token_data:
             return
 
@@ -121,11 +122,11 @@ class TokenDatastore(VersionedDatastore):
         self.discard_existing_tokens()
         return super()._migrate_version()
 
-    # def get_stored_oauth2_token(self, iap_client_id: str):
+    # def get_stored_oauth2_token(self, iap_audience: str):
     #     # TODO: OAuth2
     #     raise NotImplementedError()
 
-    # def store_oauth2_token(self, iap_client_id: str):
+    # def store_oauth2_token(self, iap_audience: str):
     #     # TODO: OAuth2
     #     raise NotImplementedError()
 

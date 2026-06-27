@@ -19,7 +19,7 @@ import requests
 
 from iaptoolkit import IAPToolkit
 
-iaptk = IAPToolkit(google_iap_client_id="EXAMPLE_ID_123456789ABCDEF")
+iaptk = IAPToolkit(google_iap_audience="EXAMPLE_ID_123456789ABCDEF")
 allowed_domains = ["example.com", ]
 
 
@@ -29,7 +29,7 @@ def example1(url: str):
     result = iaptk.check_url_and_add_token_header(
         url=url,
         request_headers=headers,
-        iap_audience="some_iap_client_id_string" # OAuth Client ID for the IAP-protected resource as 'audience'
+        iap_audience="some_iap_audience_string" # OAuth Client ID for the IAP-protected resource as 'audience'
         valid_domains=allowed_domains
     )
     # result.token_added (bool) indicates if the token was added, depending on whether or not URL was valid
@@ -49,7 +49,7 @@ def example2(url: str):
     headers = dict()
     token_is_fresh: bool = iaptk.get_token_and_add_to_headers(
         request_headers=headers,
-        iap_audience="some_iap_client_id_string" # OAuth Client ID for the IAP-protected resource as 'audience'
+        iap_audience="some_iap_audience_string" # OAuth Client ID for the IAP-protected resource as 'audience'
     )
     # token_is_fresh indicates if token was newly retrieved (True), or if a cached token was reused (False)
     # headers dict now contains the appropriate Bearer Token header for Google IAP

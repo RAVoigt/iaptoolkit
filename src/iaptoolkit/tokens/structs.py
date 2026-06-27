@@ -73,3 +73,7 @@ class ResultAddTokenHeader:
     token_added: bool
     token_is_fresh: bool
     token_is_jwt: bool
+
+    @property
+    def from_cache(self) -> bool:
+        return not self.token_is_fresh
